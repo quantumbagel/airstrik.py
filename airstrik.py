@@ -10,16 +10,15 @@ import atexit
 import argparse
 import ruamel.yaml
 
-
-parser = argparse.ArgumentParser(prog='AIRSTRIK', description='A simple program to track and detect airplanes '
-                                                              'heading towards the AERPAW field.', epilog='Go Pack!')
+parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple program to track and detect airplanes '
+                                                                 'heading towards the AERPAW field.', epilog='Go Pack!')
 parser.add_argument('-q', '--quiet', action='store_true')
 parser.add_argument('-c', '--config', default='config.yaml', help='The config file\'s location (yaml). ')
 parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s run_for property is indefinite,'
                                       ' this will be ignored', action='store_true')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
-CONFIG = config_file.load(open('config.yaml'))
+CONFIG = config_file.load(open(args.config))
 HOME = (CONFIG['home']['lat'], CONFIG['home']['lon'])
 
 
@@ -40,7 +39,8 @@ def run_dump1090():
     :return: None
     """
     os.chdir(CONFIG['dump1090_dir'])
-    p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+    p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data", shell=True, stdout=subprocess.DEVNULL,
+                         stderr=subprocess.PIPE)
     atexit.register(p.terminate)
 
 
@@ -69,12 +69,12 @@ def print_the_plane(plane, hex):  # move to Plane?
     :param hex: The hex value of the aircraft
     :return: nothing
     """
-    print(hex+": ", end='')
+    print(hex + ": ", end='')
     for item in plane:
         try:
-            print(str(plane[item][-1][0])+(len(item)-len(str(plane[item][-1][0]))+1)*' ', end=' ')
+            print(str(plane[item][-1][0]) + (len(item) - len(str(plane[item][-1][0])) + 1) * ' ', end=' ')
         except Exception as e:
-            print('NO'+(len(item))*' ', end='')
+            print('NO' + (len(item)) * ' ', end='')
     print()
 
 
@@ -85,13 +85,14 @@ def calculate_heading_directions(prev, curr):
     :param curr: The current position (lat/long)
     :return: The heading
     """
-    pi_c = math.pi/180
+    pi_c = math.pi / 180
     first_lat = prev[0] * pi_c
     first_lon = prev[1] * pi_c
     second_lat = curr[0] * pi_c
     second_lon = curr[1] * pi_c
     y = math.sin(second_lon - first_lon) * math.cos(second_lat)
-    x = (math.cos(first_lat) * math.sin(second_lat)) - (math.sin(first_lat) * math.cos(second_lat) * math.cos(second_lon - first_lon))
+    x = (math.cos(first_lat) * math.sin(second_lat)) - (
+                math.sin(first_lat) * math.cos(second_lat) * math.cos(second_lon - first_lon))
     heading_rads = math.atan2(y, x)
     return ((heading_rads * 180 / math.pi) + 360) % 360
 
@@ -164,6 +165,7 @@ def print_planes(plane_history, hexes):
     :param hexes: The list of plane hexes
     :return: The number of lines printed
     """
+
     def get_distance(d):
         """
         Get the distance from a plane dictionary (used for sorting)
@@ -185,6 +187,7 @@ def print_planes(plane_history, hexes):
             if len(d[key]):
                 return True
         return False
+
     last_printed = 0
     sorted_dist = sorted(plane_history.values(), key=get_distance)
     for data_plane in sorted_dist:
@@ -237,7 +240,8 @@ def calculate_heading_speed_alarm(plane_data):
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
     ncalc_speed = [dist_xz / time_between * 3.6, plane_data['lat_history'][-1][1]]  # same as heading
     patch_add(plane_data, 'calc_speed_history', ncalc_speed)
-    alarm, alarm_time, min_radius, packet_time = get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data)
+    alarm, alarm_time, min_radius, packet_time = get_alarm_info(current_lat_long, last_lat_long, time_between,
+                                                                plane_data)
     date_old = current_time_aircraft - packet_time
     plane_data['alarm_history'].append([alarm, current_time_aircraft])
     if alarm_time == -1:
@@ -264,13 +268,21 @@ def print_heading():
     Print the heading
     :return: none
     """
-    print(" " * 8, end='')
-    for item in ['flight', 'lat', 'lon', 'nav_heading', 'alt_baro',
-                 'calc_heading', 'calc_speed', 'alarm', 'time_until_entry', 'distance']:
-        print(item + " " * 10, end='')
-    print()
+    if not args.quiet:
+        print(" " * 8, end='')
+        for item in ['flight', 'lat', 'lon', 'nav_heading', 'alt_baro',
+                     'calc_heading', 'calc_speed', 'alarm', 'time_until_entry', 'distance']:
+            print(item + " " * 10, end='')
+        print()
+    else:
+        print("Started.")
 
-
+def print_quiet():
+    delete_last_line()
+    if CONFIG['run_for'] == -1:
+        print("Running indefinitely. On tick", tick)
+    else:
+        print(str(tick + 1) + "/" + str(CONFIG['run_for']))
 def collect_data(aircraft_json, plane_history):
     """
     Collect and calculate data for each aircraft and store in plane_history
@@ -298,47 +310,43 @@ def collect_data(aircraft_json, plane_history):
                 plane_data['flight_name_id'] = [0, [aircraft['flight']]]  # So this plays nice with print_the_plane
         for item in ['lat', 'lon', 'nav_heading', 'alt_baro']:  # Stats in aircraft_json that are retrievable
             if item in aircraft.keys():
-                if not (len(plane_data[item+'_history']) and plane_data[item+'_history'][-1][0] == aircraft[item]):
-                    plane_data[item+'_history'].append((float(aircraft[item]), current_time_aircraft))
+                if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
+                    plane_data[item + '_history'].append((float(aircraft[item]), current_time_aircraft))
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 2:  # If we have at least two
             # values for the lat/long for this plane, we can calculate heading, speed, alarm, and time_until_entry
             calculate_heading_speed_alarm(plane_data)
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 1:  # If we have a full lat/long
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
+        return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]}
+
+
+def dump_json(cwd):
+    if os.path.exists(cwd+"/dump.json"):
+        os.remove(cwd+"/dump.json")
+    json.dump(plane_history, open(cwd+'/dump.json', 'x'), indent=4, sort_keys=True)
 
 
 if __name__ == '__main__':
     start()
+    start_directory = os.getcwd()
     plane_history = {}
-    delete_last_line()
-    aircraft_json = json.load(open(CONFIG['dump1090_dir']+'/airstrik_data/aircraft.json'))
-    current_time_aircraft = float(aircraft_json['now'])
-    current_time_aircraft -= 1
-    last_printed = 0
-    if not args.quiet:
-        print_heading()
-    else:
-        print("Started.")
+    aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data/aircraft.json'))
+    current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
+    # instead of accepting a non-existent packet
+    last_printed = 1
+    print_heading()
+    print()
     tick = 0
     while tick != CONFIG['run_for']:
-        if args.quiet:
-            delete_last_line()
-            if CONFIG['run_for'] == -1:
-                print("Running indefinitely. On tick", tick)
-            else:
-                print(str(tick+1)+"/"+str(CONFIG['run_for']))
         aircraft_json, new_aircraft_time = load_aircraft_json(current_time_aircraft)
-        if tick != 0 and not args.quiet:  # If not the first iteration
-            delete_last_line(lines=last_printed)  # delete lines from stdout
         current_time_aircraft = new_aircraft_time
-        collect_data(aircraft_json, plane_history)
-        keys = [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]
-        hexes = {i[1]: i[0] for i in keys}
-        if not args.quiet:
+        hexes = collect_data(aircraft_json, plane_history)
+        if args.quiet:
+            print_quiet()
+        else:
+            delete_last_line(lines=last_printed)  # delete lines from stdout
             last_printed = print_planes(plane_history, hexes)
         tick += 1
     if not args.no_dump:
-        if os.path.exists("/home/jreder/PycharmProjects/ADS-B/dump.json"):
-            os.remove("/home/jreder/PycharmProjects/ADS-B/dump.json")
-        json.dump(plane_history, open('/home/jreder/PycharmProjects/ADS-B/dump.json', 'x'), indent=4, sort_keys=True)
+        dump_json(start_directory)
