@@ -69,7 +69,7 @@ if __name__ == '__main__':
     current_time_aircraft -= 1
     stats = ['flight', 'alt_baro', 'nav_heading', 'lat', 'lon']
     print(" " * 8, end='')
-    for item in ['lat', 'lon', 'nav_heading', 'alt_baro', 'calc_heading', 'calc_speed', 'alarm', 'time_until_entry', 'distance']:
+    for item in ['flight', 'lat', 'lon', 'nav_heading', 'alt_baro', 'calc_heading', 'calc_speed', 'alarm', 'time_until_entry', 'distance']:
         print(item + " " * 10, end='')
     print()
     for tick in range(RUN_COLLECT_FOR):
@@ -88,7 +88,8 @@ if __name__ == '__main__':
         for hex_v in sorted_hexes:
             aircraft = aircrafts_dt['aircraft'][hexes[hex_v]]
             if aircraft['hex'] not in plane_history.keys():
-                plane_history.update({aircraft['hex']: {"lat_history": [],
+                plane_history.update({aircraft['hex']: {"flight_name_id": [],
+                                                        "lat_history": [],
                                                         "lon_history": [],
                                                         "nav_heading_history": [],
                                                         "alt_baro_history": [],
@@ -98,6 +99,10 @@ if __name__ == '__main__':
                                                         'time_until_entry_history': [],
                                                         'distance_history': []}})
             plane_data = plane_history[aircraft['hex']]
+            if not len(plane_data['flight_name_id']):
+                if 'flight' in aircraft.keys():
+                    plane_data['flight_name_id'] = [0, [aircraft['flight']]]
+                    print(plane_data['flight_name_id']*100)
             for item in ['lat', 'lon', 'nav_heading', 'alt_baro']:
                 if item in aircraft.keys():
                     if len(plane_data[item+'_history']) and plane_data[item+'_history'][-1][0] == aircraft[item]:
@@ -114,8 +119,8 @@ if __name__ == '__main__':
                 else:
                     oldest_lat_long = plane_data['lat_history'][-1*OLD_USE_PACKET][0], plane_data['lon_history'][-1*OLD_USE_PACKET][0]
                     use_num = -1*OLD_USE_PACKET
-                dist_xz = geopy.distance.geodesic(current_lat_long, last_lat_long).m
-                time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][-2][1]
+                dist_xz = geopy.distance.geodesic(current_lat_long, oldest_lat_long).m
+                time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][use_num][1]
                 heading_xz = calculate_heading_directions(last_lat_long, current_lat_long)
                 ncalc_heading = [heading_xz, plane_data['lat_history'][-1][1]]
                 if ncalc_heading not in plane_data['calc_heading_history']:
@@ -172,7 +177,11 @@ if __name__ == '__main__':
             return False
         sorted_dist = sorted(plane_history.values(), key=get_distance)
         for item in sorted_dist:
-            hex_code = list(plane_history.keys())[list(plane_history.values()).index(item)]
+            try:
+                hex_code = list(plane_history.keys())[list(plane_history.values()).index(item)]
+            except KeyError: # aircraft no longer exists
+                continue
+
             if (aircrafts_dt['aircraft'][hexes[hex_code]]['seen'] < SEEN_MAX) and is_not_empty(item):
                 print_the_plane(item, hex_code)
                 last_printed += 1
