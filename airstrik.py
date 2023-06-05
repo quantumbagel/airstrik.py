@@ -39,7 +39,7 @@ def run_dump1090():
     :return: None
     """
     os.chdir(CONFIG['dump1090_dir'])
-    p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data", shell=True, stdout=subprocess.DEVNULL,
+    p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data --write-json-every "+str(CONFIG['json_speed']), shell=True, stdout=subprocess.DEVNULL,
                          stderr=subprocess.PIPE)
     atexit.register(p.terminate)
 
@@ -318,7 +318,7 @@ def collect_data(aircraft_json, plane_history):
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 1:  # If we have a full lat/long
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
-        return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]}
+    return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]}
 
 
 def dump_json(cwd):

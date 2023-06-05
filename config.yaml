@@ -1,4 +1,4 @@
-run_for: 10  # The amount of seconds to run for. Set this to -1 to run indefinitely
+run_for: -1  # The amount of seconds to run for. Set this to -1 to run indefinitely
 think_ahead: 30  # The amount of seconds to simulate a vehicle's path to check if it intersects with the boundaries
 lat_lon_packet_age_max: 10 # The maximum age of a latitude packet used to calculate the speed (This should be fine)
 home: # Home lat/long point
@@ -7,3 +7,4 @@ home: # Home lat/long point
 radius: 20 # Protection radius (km)
 remember: 60 # maximum time in seconds where the aircraft has not sent a packet for the system to track it
 dump1090_dir: '/home/jreder/dump1090' # the storage location of https://github.com/flightaware/dump1090
+json_speed: 0  # time between updates
