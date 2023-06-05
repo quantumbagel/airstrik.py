@@ -15,7 +15,7 @@ def delete_last_line(lines=1):
 
 
 def run_dump1090():
-    pass
+
     os.chdir(DUMP1090_DIR)
     try:
         p = subprocess.Popen("exec ./dump1090 --write-json gai", shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
@@ -54,7 +54,8 @@ def print_ac_data(aircraft):
         return ''
 
 
-
+subprocess.run("rm -rf "+DUMP1090_DIR+"/gai", shell=True)
+subprocess.run("mkdir "+DUMP1090_DIR+"/gai", shell=True)
 t = threading.Thread(target=run_dump1090, daemon=True)
 t.start()
 time.sleep(1)
