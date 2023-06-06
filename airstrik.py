@@ -9,16 +9,17 @@ import geopy.distance
 import atexit
 import argparse
 import ruamel.yaml
-
 parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple program to track and detect airplanes '
                                                                  'heading towards the AERPAW field.', epilog='Go Pack!')
 parser.add_argument('-q', '--quiet', action='store_true')
 parser.add_argument('-c', '--config', default='config.yaml', help='The config file\'s location (yaml). ')
 parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s run_for property is indefinite,'
                                       ' this will be ignored', action='store_true')
+parser.add_argument('-d', '--device', default=0, type=int, help='The index of the RTLSDR device')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
+time_start = str(time.time())
 HOME = (CONFIG['home']['lat'], CONFIG['home']['lon'])
 
 
@@ -39,9 +40,16 @@ def run_dump1090():
     :return: None
     """
     os.chdir(CONFIG['dump1090_dir'])
-    p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data --write-json-every "+str(CONFIG['json_speed']), shell=True, stdout=subprocess.DEVNULL,
+    p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data"+time_start +
+                         " --write-json-every "+str(CONFIG['json_speed'])+" --device "+str(args.device),
+                         shell=True, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
+
     atexit.register(p.terminate)
+    p.communicate()
+    if p.returncode:
+        while True:
+            print("Error!", end='')
 
 
 def start():
@@ -49,13 +57,13 @@ def start():
     A function to remove the output directory and recreate it, and wait for dump1090 to start
     :return: none
     """
-    subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data", shell=True)
-    subprocess.run("mkdir " + CONFIG['dump1090_dir'] + "/airstrik_data", shell=True)
+    subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data"+time_start, shell=True)
+    subprocess.run("mkdir " + CONFIG['dump1090_dir'] + "/airstrik_data"+time_start, shell=True)
     t = threading.Thread(target=run_dump1090, daemon=True)
     t.start()
     print("Loading...", end='')
     sys.stdout.flush()
-    while 'aircraft.json' not in os.listdir(CONFIG['dump1090_dir'] + '/airstrik_data'):
+    while 'aircraft.json' not in os.listdir(CONFIG['dump1090_dir'] + '/airstrik_data'+time_start):
         print(".", end='')
         sys.stdout.flush()
         time.sleep(0.1)
@@ -104,7 +112,7 @@ def load_aircraft_json(current_time_aircraft):
     :return: The new json, and new time
     """
     while True:
-        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data/aircraft.json'))
+        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data'+time_start+'/aircraft.json'))
         new_current_time_aircraft = float(aircraft_json['now'])
         if new_current_time_aircraft != current_time_aircraft:
             break
@@ -240,7 +248,7 @@ def calculate_heading_speed_alarm(plane_data):
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
     ncalc_speed = [dist_xz / time_between * 3.6, plane_data['lat_history'][-1][1]]  # same as heading
     patch_add(plane_data, 'calc_speed_history', ncalc_speed)
-    alarm, alarm_time, min_radius, packet_time = get_alarm_info(current_lat_long, last_lat_long, time_between,
+    alarm, alarm_time, min_radius, packet_time = get_alarm_info(current_lat_long, oldest_lat_long, time_between,
                                                                 plane_data)
     date_old = current_time_aircraft - packet_time
     plane_data['alarm_history'].append([alarm, current_time_aircraft])
@@ -270,12 +278,13 @@ def print_heading():
     """
     if not args.quiet:
         print(" " * 8, end='')
-        for item in ['flight', 'lat', 'lon', 'nav_heading', 'alt_baro',
+        for item in ['flight', 'lat', 'lon', 'nav_heading', 'alt_geom',
                      'calc_heading', 'calc_speed', 'alarm', 'time_until_entry', 'distance']:
             print(item + " " * 10, end='')
         print()
     else:
         print("Started.")
+
 
 def print_quiet():
     delete_last_line()
@@ -283,6 +292,8 @@ def print_quiet():
         print("Running indefinitely. On tick", tick)
     else:
         print(str(tick + 1) + "/" + str(CONFIG['run_for']))
+
+
 def collect_data(aircraft_json, plane_history):
     """
     Collect and calculate data for each aircraft and store in plane_history
@@ -298,7 +309,7 @@ def collect_data(aircraft_json, plane_history):
                                                     "lat_history": [],
                                                     "lon_history": [],
                                                     "nav_heading_history": [],
-                                                    "alt_baro_history": [],
+                                                    "alt_geom_history": [],
                                                     "calc_heading_history": [],
                                                     "calc_speed_history": [],
                                                     'alarm_history': [],
@@ -308,7 +319,7 @@ def collect_data(aircraft_json, plane_history):
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
                 plane_data['flight_name_id'] = [0, [aircraft['flight']]]  # So this plays nice with print_the_plane
-        for item in ['lat', 'lon', 'nav_heading', 'alt_baro']:  # Stats in aircraft_json that are retrievable
+        for item in ['lat', 'lon', 'nav_heading', 'alt_geom']:  # Stats in aircraft_json that are retrievable
             if item in aircraft.keys():
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
                     plane_data[item + '_history'].append((float(aircraft[item]), current_time_aircraft))
@@ -331,7 +342,7 @@ if __name__ == '__main__':
     start()
     start_directory = os.getcwd()
     plane_history = {}
-    aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data/aircraft.json'))
+    aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data'+time_start+'/aircraft.json'))
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
