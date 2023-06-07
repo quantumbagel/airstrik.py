@@ -318,7 +318,7 @@ def collect_data(aircraft_json, plane_history):
             except KeyError:
                 continue
             st = datetime.datetime.fromtimestamp(plane_history[aircraft['hex']]['start_time'])
-            et = datetime.datetime.fromtimestamp(aircraft_json['now'])
+            et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
             ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) + "."})
             ac_dt.update({"end_time": aircraft_json['now']})
             database.database[aircraft['hex']].insert_one(ac_dt)
@@ -369,7 +369,7 @@ if __name__ == '__main__':
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
-    database = mongo.MongoDBClient(mongo.uri, args['database-out'])
+    database = mongo.MongoDBClient(mongo.uri, args.database_out)
     print_heading()
     total_uploads = 0
     print()
