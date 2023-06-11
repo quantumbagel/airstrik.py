@@ -21,10 +21,13 @@ parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s r
                                       ' this will be ignored', action='store_true')
 parser.add_argument('-d', '--device', default=0, type=int, help='The index of the RTLSDR device')
 parser.add_argument('--database-out', default='airstrikdb', help='The mongo database to write to')
+parser.add_argument('-l', '--log', action='store_true', help='Whether to output a log or not')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
 time_start = str(time.time())
+if args.log:
+    open('airstrik' + time_start + '.log', 'x').close()
 HOME = (CONFIG['home']['lat'], CONFIG['home']['lon'])
 
 
@@ -154,16 +157,19 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
     min_radius = 100000000
     packet_time = max(plane_data['lat_history'][-1][1], plane_data['lon_history'][-1][1])
     alarm_time = -1
-    alarm = False
+    alarm_ll = False
     last_radius = 100000000
     for second in range(CONFIG['think_ahead']):
         new_lat = lat_change_sec * (second + 1) + current_lat_long[0]
         new_long = long_change_sec * (second + 1) + current_lat_long[1]
+        if new_lat > 90 or new_lat < -90 or new_long > 90 or new_long < -90:
+            break
+
         new_coords = (new_lat, new_long)
         dist_to_home = geopy.distance.geodesic(new_coords, HOME).km
         alarm_lat_long = dist_to_home < CONFIG['radius']
         if alarm_lat_long:
-            alarm = True
+            alarm_ll = True
             if alarm_time == -1:
                 alarm_time = second
             if dist_to_home < min_radius:
@@ -171,6 +177,10 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
             if dist_to_home > last_radius:
                 break
             last_radius = dist_to_home
+    if len(plane_data['alt_geom_history']):
+        alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= CONFIG['min_alt']
+    else:
+        alarm = alarm_ll
     return alarm, alarm_time, min_radius, packet_time
 
 
@@ -204,7 +214,7 @@ def print_planes(plane_history, hexes):
                 return True
         return False
 
-    last_printed = 0
+    last_printed = 1
     sorted_dist = sorted(plane_history.values(), key=get_distance)
     for data_plane in sorted_dist:
         try:
@@ -214,8 +224,18 @@ def print_planes(plane_history, hexes):
                 last_printed += 1
         except KeyError:  # aircraft no longer exists
             continue
-    print("Have uploaded to mongo", total_uploads, 'times.')
-    return last_printed + 1
+    print("Have added to mongo", total_uploads, 'times.')
+    return last_printed
+
+
+def raise_alarm(hx, plane_data):
+    """
+    Raise the alarm!
+    :param hx: the plane id
+    :param plane_data: The data of the plane triggering the alarm
+    :return: nothing
+    """
+    pass
 
 
 def get_current_lat_long(plane_data):
@@ -239,7 +259,7 @@ def get_current_lat_long(plane_data):
     return current, last, oldest, old_index
 
 
-def calculate_heading_speed_alarm(plane_data):
+def calculate_heading_speed_alarm(plane_data, hx):
     """
     Calculate the heading, speed, whether we should raise an alarm, and how long we have and update it
     :param plane_data: The plane data for one plane
@@ -259,6 +279,8 @@ def calculate_heading_speed_alarm(plane_data):
     patch_add(plane_data, 'calc_speed_history', ncalc_speed)
     alarm, alarm_time, min_radius, packet_time = get_alarm_info(current_lat_long, oldest_lat_long, time_between,
                                                                 plane_data)
+    if alarm:
+        raise_alarm(hx, plane_data)
     date_old = current_time_aircraft - packet_time
     plane_data['alarm_history'].append([alarm, current_time_aircraft])
     if alarm_time == -1:
@@ -317,6 +339,9 @@ def collect_data(aircraft_json, plane_history):
                 ac_dt = plane_history[aircraft['hex']]
             except KeyError:
                 continue
+            if (aircraft_json['now']-aircraft['seen']) - \
+                    plane_history[aircraft['hex']]['start_time'] < CONFIG['min_trip_length']:
+                continue
             st = datetime.datetime.fromtimestamp(plane_history[aircraft['hex']]['start_time'])
             et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
             ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) + "."})
@@ -325,8 +350,7 @@ def collect_data(aircraft_json, plane_history):
             del plane_history[aircraft['hex']]
             total_uploads += 1
             continue
-        if aircraft['hex'] not in plane_history.keys():  # If we haven't seen this plane before, create a new one
-
+        if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):  # If we haven't seen this plane before, create a new one
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
                                                     "start_time": aircraft_json['now'],
                                                     "lat_history": [],
@@ -341,18 +365,19 @@ def collect_data(aircraft_json, plane_history):
         plane_data = plane_history[aircraft['hex']]  # A reference to plane (TODO: Plane)
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
-                plane_data['flight_name_id'] = [0, [aircraft['flight']]]  # So this plays nice with print_the_plane
+                plane_data['flight_name_id'] = [[aircraft['flight'], aircraft_json['now']]]  # So this plays nice with print_the_plane
         for item in ['lat', 'lon', 'nav_heading', 'alt_geom']:  # Stats in aircraft_json that are retrievable
             if item in aircraft.keys():
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
                     plane_data[item + '_history'].append((float(aircraft[item]), current_time_aircraft))
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 2:  # If we have at least two
             # values for the lat/long for this plane, we can calculate heading, speed, alarm, and time_until_entry
-            calculate_heading_speed_alarm(plane_data)
+            calculate_heading_speed_alarm(plane_data, aircraft['hex'])
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 1:  # If we have a full lat/long
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]}
+
 
 
 def dump_json(cwd):

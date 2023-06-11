@@ -148,7 +148,7 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
     min_radius = 100000000
     packet_time = max(plane_data['lat_history'][-1][1], plane_data['lon_history'][-1][1])
     alarm_time = -1
-    alarm = False
+    alarm_ll = False
     last_radius = 100000000
     for second in range(CONFIG['think_ahead']):
         new_lat = lat_change_sec * (second + 1) + current_lat_long[0]
@@ -157,7 +157,7 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
         dist_to_home = geopy.distance.geodesic(new_coords, HOME).km
         alarm_lat_long = dist_to_home < CONFIG['radius']
         if alarm_lat_long:
-            alarm = True
+            alarm_ll = True
             if alarm_time == -1:
                 alarm_time = second
             if dist_to_home < min_radius:
@@ -165,6 +165,8 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
             if dist_to_home > last_radius:
                 break
             last_radius = dist_to_home
+    print(plane_data['alt_geom'][-1][0], alarm_ll)
+    alarm = alarm_ll and plane_data['alt_geom'][-1][0] <= CONFIG['min_alt']
     return alarm, alarm_time, min_radius, packet_time
 
 
