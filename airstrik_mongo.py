@@ -26,6 +26,7 @@ args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
 time_start = str(time.time())
+end_process = False
 if args.log:
     open('airstrik' + time_start + '.log', 'x').close()
 HOME = (CONFIG['home']['lat'], CONFIG['home']['lon'])
@@ -47,6 +48,7 @@ def run_dump1090():
     Run dump1090 as a daemon subprocess
     :return: None
     """
+    global end_process
     os.chdir(CONFIG['dump1090_dir'])
     p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data" + time_start +
                          " --write-json-every " + str(CONFIG['json_speed']) + " --device " + str(args.device),
@@ -56,8 +58,7 @@ def run_dump1090():
     atexit.register(p.terminate)
     p.communicate()
     if p.returncode:
-        print("Error")
-        raise Exception("dump1090 failure")
+        end_process = True
 
 
 def start():
@@ -65,6 +66,7 @@ def start():
     A function to remove the output directory and recreate it, and wait for dump1090 to start
     :return: none
     """
+    global end_process
     subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
     subprocess.run("mkdir " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
     t = threading.Thread(target=run_dump1090, daemon=True)
@@ -72,6 +74,9 @@ def start():
     print("Loading...", end='')
     sys.stdout.flush()
     while 'aircraft.json' not in os.listdir(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start):
+        if end_process:
+            print("Failed! (antenna not plugged in?)")
+            sys.exit(1)
         print(".", end='')
         sys.stdout.flush()
         time.sleep(0.1)
@@ -123,6 +128,9 @@ def load_aircraft_json(current_time_aircraft):
     :return: The new json, and new time
     """
     while True:
+        if end_process:
+            print("Failed! (likely antenna is unplugged)")
+            sys.exit(1)
         aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
         new_current_time_aircraft = float(aircraft_json['now'])
         if new_current_time_aircraft != current_time_aircraft:
@@ -400,6 +408,9 @@ if __name__ == '__main__':
     print()
     tick = 0
     while tick != CONFIG['run_for']:
+        if end_process:
+            print("Failed! (antenna gone?)")
+            sys.exit(1)
         aircraft_json, new_aircraft_time = load_aircraft_json(current_time_aircraft)
         current_time_aircraft = new_aircraft_time
         hexes = collect_data(aircraft_json, plane_history)
