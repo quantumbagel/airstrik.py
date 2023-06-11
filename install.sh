@@ -1,3 +1,6 @@
+curl -fsSL https://pgp.mongodb.com/server-6.0.asc | \
+   sudo gpg -o /usr/share/keyrings/mongodb-server-6.0.gpg \
+   --dearmor
 sudo apt-get update
 sudo apt-get install -y mongodb-org
 sudo cp airstrikd.service /etc/systemd/system/airstrikd.service
