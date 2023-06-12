@@ -8,7 +8,7 @@ sudo apt-get install -y mongodb-org
 sudo apt-get install -f
 sudo cp airstrikd.service /etc/systemd/system/airstrikd.service
 sudo chmod 644 /etc/systemd/system/airstrikd.service
-systemctl daemon-reload
+sudo systemctl daemon-reload
 python3 -m pip install -r requirements.txt
 git clone https://github.com/flightaware/dump1090.git
 cd dump1090 || exit
