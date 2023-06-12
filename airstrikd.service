@@ -6,4 +6,4 @@ ExecStart=/usr/bin/python3.10 /home/jreder/PycharmProjects/ADS-B/airstrik_mongo.
 WorkingDirectory=/home/jreder/PycharmProjects/ADS-B
 Restart=on-failure
 [Install]
-#WantedBy=multi-user.target
+WantedBy=multi-user.target

@@ -67,13 +67,15 @@ def start():
     :return: none
     """
     global end_process
-    subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
+    subprocess.run("rm -rf "+CONFIG['dump1090_dir']+"/airstrik_data*", shell=True)
     subprocess.run("mkdir " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
     t = threading.Thread(target=run_dump1090, daemon=True)
     t.start()
     print("Loading...", end='')
     sys.stdout.flush()
-    while 'aircraft.json' not in os.listdir(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start):
+    if CONFIG['dump1090_dir'].startswith('.'):
+        CONFIG['dump1090_dir'] = CONFIG['dump1090_dir'][1:]
+    while 'aircraft.json' not in os.listdir(start_directory + CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'):
         if end_process:
             print("Failed! (antenna not plugged in?)")
             sys.exit(1)
@@ -131,7 +133,7 @@ def load_aircraft_json(current_time_aircraft):
         if end_process:
             print("Failed! (likely antenna is unplugged)")
             sys.exit(1)
-        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+        aircraft_json = json.load(open(start_directory + CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
         new_current_time_aircraft = float(aircraft_json['now'])
         if new_current_time_aircraft != current_time_aircraft:
             break
@@ -395,10 +397,10 @@ def dump_json(cwd):
 
 
 if __name__ == '__main__':
-    start()
     start_directory = os.getcwd()
+    start()
     plane_history = {}
-    aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+    aircraft_json = json.load(open(start_directory + CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
