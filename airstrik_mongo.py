@@ -2,7 +2,6 @@ import datetime
 import json
 import math
 import os
-import signal
 import subprocess
 import sys
 import threading
@@ -11,7 +10,7 @@ import geopy.distance
 import atexit
 import argparse
 import ruamel.yaml
-import mongo
+import mongodb
 
 parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple program to track and detect airplanes '
                                                                  'heading towards the AERPAW field.', epilog='Go Pack!')
@@ -404,7 +403,7 @@ if __name__ == '__main__':
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
-    database = mongo.MongoDBClient(mongo.uri, args.database_out)
+    database = mongodb.MongoDBClient(mongodb.uri, args.database_out)
     print_heading()
     total_uploads = 0
     print()
