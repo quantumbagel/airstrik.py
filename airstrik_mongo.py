@@ -66,14 +66,14 @@ def start():
     :return: none
     """
     global end_process
-    subprocess.run("rm -rf "+CONFIG['dump1090_dir']+"/airstrik_data*", shell=True)
-    subprocess.run("mkdir " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
+    if CONFIG['dump1090_dir'].startswith('.'):
+        CONFIG['dump1090_dir'] = CONFIG['dump1090_dir'][1:]
+    subprocess.run("rm -rf "+start_directory + CONFIG['dump1090_dir']+"/airstrik_data*", shell=True)
+    subprocess.run("mkdir " + start_directory + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
     t = threading.Thread(target=run_dump1090, daemon=True)
     t.start()
     print("Loading...", end='')
     sys.stdout.flush()
-    if CONFIG['dump1090_dir'].startswith('.'):
-        CONFIG['dump1090_dir'] = CONFIG['dump1090_dir'][1:]
     while 'aircraft.json' not in os.listdir(start_directory + CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'):
         if end_process:
             print("Failed! (antenna not plugged in?)")
