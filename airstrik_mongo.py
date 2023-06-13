@@ -68,8 +68,12 @@ def start():
     global end_process
     if CONFIG['dump1090_dir'].startswith('.'):
         CONFIG['dump1090_dir'] = CONFIG['dump1090_dir'][1:]
-    subprocess.run("rm -rf "+start_directory + CONFIG['dump1090_dir']+"/airstrik_data*", shell=True)
-    subprocess.run("mkdir " + start_directory + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
+        subprocess.run("rm -rf "+start_directory + CONFIG['dump1090_dir']+"/airstrik_data*", shell=True)
+        subprocess.run("mkdir " + start_directory + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
+    else:
+        subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
+        subprocess.run("mkdir " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
+        CONFIG['dump1090_dir'] = CONFIG['dump1090_dir'][1:]
     t = threading.Thread(target=run_dump1090, daemon=True)
     t.start()
     print("Loading...", end='')
