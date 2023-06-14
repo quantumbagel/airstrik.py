@@ -37,6 +37,7 @@ def delete_last_line(lines=1):
     :param lines: The number of lines to delete from stdout
     :return: nothing
     """
+    lines = 0
     for _ in range(lines):
         sys.stdout.write('\x1b[1A')
         sys.stdout.write('\x1b[2K')
@@ -295,7 +296,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
     if alarm:
         raise_alarm(hx, plane_data)
     date_old = current_time_aircraft - packet_time
-    if len(plane_data['alarm_history']) == 0 or ['alarm_history'][-1][0] != alarm:
+    if len(plane_data['alarm_history']) == 0 or plane_data['alarm_history'][-1][0] != alarm:
         plane_data['alarm_history'].append([alarm, current_time_aircraft])
     if alarm_time == -1:
         inp = 'NO'
@@ -391,10 +392,14 @@ def collect_data(aircraft_json, plane_history):
                 for key in ac_dt.keys():
                     if key in ['extras', 'flight_name_id']:
                         new_write.update({key: ac_dt[key]})
+                        continue
                     itm = ac_dt[key]
                     for itr in itm:
                         if abs(float(itr[1])-closest_time) < CONFIG['unimportant_save_sec_range']:
-                            new_write[key].append(itr)
+                            if key not in new_write.keys():
+                                new_write.update({key: [itr]})
+                            else:
+                                new_write[key].append(itr)
                 database.database[aircraft['hex']].insert_one(new_write)
             del plane_history[aircraft['hex']]
             total_uploads += 1
