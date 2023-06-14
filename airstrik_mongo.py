@@ -292,7 +292,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
     if alarm:
         raise_alarm(hx, plane_data)
     date_old = current_time_aircraft - packet_time
-    if plane_data['alarm_history'][-1][0] != alarm:
+    if len(plane_data['alarm_history']) == 0 or ['alarm_history'][-1][0] != alarm:
         plane_data['alarm_history'].append([alarm, current_time_aircraft])
     if alarm_time == -1:
         inp = 'NO'
