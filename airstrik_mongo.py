@@ -44,6 +44,18 @@ def delete_last_line(lines=1):
         sys.stdout.write('\x1b[2K')
 
 
+def is_not_empty(d):  # TODO: Plane?
+    """
+    Check if there is any data in plane dictionary
+    :param d: The plane dictionary
+    :return: True or False
+    """
+    for key in d.keys():
+        if key != 'start_time' and len(d[key]):
+            return True
+    return False
+
+
 def run_dump1090():
     """
     Run dump1090 as a daemon subprocess
@@ -213,29 +225,19 @@ def print_planes(plane_history, hexes):
         except IndexError:
             return 10000
 
-    def is_not_empty(d):  # TODO: Plane?
-        """
-        Check if there is any data in plane dictionary
-        :param d: The plane dictionary
-        :return: True or False
-        """
-        for key in d.keys():
-            if key != 'start_time' and len(d[key]):
-                return True
-        return False
-
-    last_printed = 1
+    lp = 2
     sorted_dist = sorted(plane_history.values(), key=get_distance)
     for data_plane in sorted_dist:
         try:
             hex_code = list(plane_history.keys())[list(plane_history.values()).index(data_plane)]
             if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
                 print_the_plane(data_plane, hex_code)
-                last_printed += 1
+                lp += 1
         except KeyError:  # aircraft no longer exists
             continue
     print("Have added to mongo", total_uploads, 'times.')
-    return last_printed
+    print("Currently parsing", lp-2, "planes.")
+    return lp
 
 
 def raise_alarm(hx, plane_data):
@@ -329,11 +331,21 @@ def print_heading():
 
 
 def print_quiet():
-    delete_last_line()
+    delete_last_line(lines=3)
+    plns = 0
+    for data_plane in plane_history:
+        try:
+            hex_code = list(plane_history.keys())[list(plane_history.values()).index(data_plane)]
+            if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
+                plns += 1
+        except KeyError:  # aircraft no longer exists
+            continue
     if CONFIG['run_for'] == -1:
         print("Running indefinitely. On tick", tick)
     else:
         print(str(tick + 1) + "/" + str(CONFIG['run_for']))
+    print("Have added to mongo", total_uploads, 'times.')
+    print("Currently parsing", plns, "planes.")
 
 
 def collect_data(aircraft_json, plane_history):
@@ -352,6 +364,7 @@ def collect_data(aircraft_json, plane_history):
                 continue
             if (aircraft_json['now']-aircraft['seen']) - \
                     plane_history[aircraft['hex']]['start_time'] < CONFIG['min_trip_length']:
+                del plane_history[aircraft['hex']]
                 continue
             st = datetime.datetime.fromtimestamp(ac_dt['extras']['start_time'])
             et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
@@ -411,7 +424,6 @@ def collect_data(aircraft_json, plane_history):
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]}
-
 
 
 def dump_json(cwd):
