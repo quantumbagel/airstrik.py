@@ -393,7 +393,7 @@ def collect_data(aircraft_json, plane_history):
                         new_write.update({key: ac_dt[key]})
                     itm = ac_dt[key]
                     for itr in itm:
-                        if abs(itr[1]-closest_time) < CONFIG['unimportant_save_sec_range']:
+                        if abs(float(itr[1])-closest_time) < CONFIG['unimportant_save_sec_range']:
                             new_write[key].append(itr)
                 database.database[aircraft['hex']].insert_one(new_write)
             del plane_history[aircraft['hex']]
