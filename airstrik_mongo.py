@@ -36,7 +36,6 @@ def delete_last_line(lines=1):
     :param lines: The number of lines to delete from stdout
     :return: nothing
     """
-    lines = 0
     for _ in range(lines):
         sys.stdout.write('\x1b[1A')
         sys.stdout.write('\x1b[2K')
