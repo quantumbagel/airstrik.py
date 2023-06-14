@@ -11,3 +11,4 @@ dump1090_dir: './dump1090' # the storage location of https://github.com/flightaw
 json_speed: 0  # time between updates
 min_trip_length: 90 # the minimum time a plane must be seen to be saved to mongod (sec)
 unimportant_save_sec_range: 10 # when a plane is deemed unimportant, how many seconds around its closest should I save?
+print_top_planes: -1  # print this amount of planes (-1 to print all)

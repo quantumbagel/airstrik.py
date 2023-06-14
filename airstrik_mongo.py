@@ -233,6 +233,8 @@ def print_planes(plane_history, hexes):
             if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
                 print_the_plane(data_plane, hex_code)
                 lp += 1
+                if lp - 2 == CONFIG['print_top_planes']:
+                    break
         except KeyError:  # aircraft no longer exists
             continue
     print("Have added to mongo", total_uploads, 'times.')
@@ -339,6 +341,8 @@ def print_quiet():
             if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
                 plns += 1
         except KeyError:  # aircraft no longer exists
+            continue
+        except ValueError:
             continue
     if CONFIG['run_for'] == -1:
         print("Running indefinitely. On tick", tick)
