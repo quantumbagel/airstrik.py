@@ -301,7 +301,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
         inp = 'NO'
     else:
         inp = alarm_time - date_old
-    if len(plane_data['time_until_entry_history']) == 0 or plane_data['time_until_entry_history'][-1][0] != alarm:
+    if len(plane_data['time_until_entry_history']) == 0 or plane_data['time_until_entry_history'][-1][0] != inp:
         plane_data['time_until_entry_history'].append([inp, current_time_aircraft])
 
 
