@@ -27,8 +27,6 @@ CONFIG = config_file.load(open(args.config))
 time_start = str(time.time())
 end_process = False
 is_relative_dir = CONFIG['dump1090_dir'].startswith('.')
-
-
 HOME = (CONFIG['home']['lat'], CONFIG['home']['lon'])
 
 
@@ -38,12 +36,13 @@ def delete_last_line(lines=1):
     :param lines: The number of lines to delete from stdout
     :return: nothing
     """
+    lines = 0
     for _ in range(lines):
         sys.stdout.write('\x1b[1A')
         sys.stdout.write('\x1b[2K')
 
 
-def is_not_empty(d):  # TODO: Plane?
+def is_not_empty(d):
     """
     Check if there is any data in plane dictionary
     :param d: The plane dictionary
@@ -62,13 +61,13 @@ def run_dump1090():
     """
     global end_process
     os.chdir(CONFIG['dump1090_dir'])
-    p = subprocess.Popen("sudo ./dump1090 --write-json airstrik_data" + time_start +
+    p = subprocess.Popen("sudo ./dump1090 --quiet --write-json airstrik_data" + time_start +
                          " --write-json-every " + str(CONFIG['json_speed']) + " --device " + str(args.device),
-                         shell=True, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE)
+                         shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     atexit.register(p.terminate)
     p.communicate()
     if p.returncode:
+        print(p.stderr)
         end_process = True
 
 
@@ -379,6 +378,7 @@ def collect_data(aircraft_json, plane_history):
                 ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) +
                                             ". It was in the alarm zone."})
                 database.database[aircraft['hex']].insert_one(ac_dt)
+                del ac_dt
             else:  # never entered, save everything within some sec of closest packet
                 new_write = {}
                 closest_time = 0
@@ -407,6 +407,7 @@ def collect_data(aircraft_json, plane_history):
                             else:
                                 new_write[key].append(itr)
                 database.database[aircraft['hex']].insert_one(new_write)
+                del new_write
             del plane_history[aircraft['hex']]
             total_uploads += 1
             continue
@@ -423,7 +424,7 @@ def collect_data(aircraft_json, plane_history):
                                                     'alarm_history': [],
                                                     'time_until_entry_history': [],
                                                     'distance_history': []}})
-        plane_data = plane_history[aircraft['hex']]  # A reference to plane (TODO: Plane)
+        plane_data = plane_history[aircraft['hex']]  # A reference to plane
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
                 plane_data['flight_name_id'] = [[aircraft['flight'], aircraft_json['now']]]  # So this plays nice with print_the_plane
