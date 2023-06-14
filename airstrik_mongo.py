@@ -26,6 +26,8 @@ config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
 time_start = str(time.time())
 end_process = False
+is_relative_dir = CONFIG['dump1090_dir'].startswith('.')
+
 if args.log:
     open('airstrik' + time_start + '.log', 'x').close()
 HOME = (CONFIG['home']['lat'], CONFIG['home']['lon'])
@@ -49,11 +51,10 @@ def run_dump1090():
     """
     global end_process
     os.chdir(CONFIG['dump1090_dir'])
-    p = subprocess.Popen("exec ./dump1090 --write-json airstrik_data" + time_start +
+    p = subprocess.Popen("sudo ./dump1090 --write-json airstrik_data" + time_start +
                          " --write-json-every " + str(CONFIG['json_speed']) + " --device " + str(args.device),
                          shell=True, stdout=subprocess.PIPE,
                          stderr=subprocess.PIPE)
-
     atexit.register(p.terminate)
     p.communicate()
     if p.returncode:
@@ -66,19 +67,14 @@ def start():
     :return: none
     """
     global end_process
-    if CONFIG['dump1090_dir'].startswith('.'):
-        CONFIG['dump1090_dir'] = CONFIG['dump1090_dir'][1:]
-        subprocess.run("rm -rf "+start_directory + CONFIG['dump1090_dir']+"/airstrik_data*", shell=True)
-        subprocess.run("mkdir " + start_directory + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
-    else:
-        subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
-        subprocess.run("mkdir " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start, shell=True)
-        CONFIG['dump1090_dir'] = CONFIG['dump1090_dir'][1:]
+    subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
+    mkc = "mkdir -m 777 " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start
+    subprocess.run(mkc, shell=True)
     t = threading.Thread(target=run_dump1090, daemon=True)
     t.start()
     print("Loading...", end='')
     sys.stdout.flush()
-    while 'aircraft.json' not in os.listdir(start_directory + CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'):
+    while 'aircraft.json' not in os.listdir(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'):
         if end_process:
             print("Failed! (antenna not plugged in?)")
             sys.exit(1)
@@ -97,7 +93,7 @@ def print_the_plane(plane, hex):  # move to Plane?
     """
     print(hex + ": ", end='')
     for item in plane:
-        if item == 'start_time':
+        if item == 'extras':
             continue
         try:
             print(str(plane[item][-1][0]) + (len(item) - len(str(plane[item][-1][0])) + 1) * ' ', end=' ')
@@ -136,7 +132,7 @@ def load_aircraft_json(current_time_aircraft):
         if end_process:
             print("Failed! (likely antenna is unplugged)")
             sys.exit(1)
-        aircraft_json = json.load(open(start_directory + CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
         new_current_time_aircraft = float(aircraft_json['now'])
         if new_current_time_aircraft != current_time_aircraft:
             break
@@ -183,6 +179,7 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
         alarm_lat_long = dist_to_home < CONFIG['radius']
         if alarm_lat_long:
             alarm_ll = True
+            plane_data['extras']['in_zone'] = True
             if alarm_time == -1:
                 alarm_time = second
             if dist_to_home < min_radius:
@@ -295,7 +292,8 @@ def calculate_heading_speed_alarm(plane_data, hx):
     if alarm:
         raise_alarm(hx, plane_data)
     date_old = current_time_aircraft - packet_time
-    plane_data['alarm_history'].append([alarm, current_time_aircraft])
+    if plane_data['alarm_history'][-1][0] != alarm:
+        plane_data['alarm_history'].append([alarm, current_time_aircraft])
     if alarm_time == -1:
         inp = 'NO'
     else:
@@ -347,7 +345,7 @@ def collect_data(aircraft_json, plane_history):
     """
     global total_uploads
     for aircraft in aircraft_json['aircraft']:
-        if aircraft['seen'] > CONFIG['remember']:  # don't even bother
+        if aircraft['seen'] > CONFIG['remember']:  # don't even bother / try to upload?
             try:
                 ac_dt = plane_history[aircraft['hex']]
             except KeyError:
@@ -355,17 +353,40 @@ def collect_data(aircraft_json, plane_history):
             if (aircraft_json['now']-aircraft['seen']) - \
                     plane_history[aircraft['hex']]['start_time'] < CONFIG['min_trip_length']:
                 continue
-            st = datetime.datetime.fromtimestamp(plane_history[aircraft['hex']]['start_time'])
+            st = datetime.datetime.fromtimestamp(ac_dt['extras']['start_time'])
             et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
-            ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) + "."})
-            ac_dt.update({"end_time": aircraft_json['now']})
-            database.database[aircraft['hex']].insert_one(ac_dt)
+            ac_dt['extras'].update({"end_time": aircraft_json['now']})
+            if ac_dt['extras']['in_zone']:
+                ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) +
+                                            ". It was in the alarm zone."})
+                database.database[aircraft['hex']].insert_one(ac_dt)
+            else:  # never entered, save everything within some sec of closest packet
+                new_write = {}
+                closest_time = 0
+                closest_dist = ac_dt['distance_history'][0][1]
+                for itm in ac_dt['distance_history'][1:]:
+                    if closest_dist > itm[0]:
+                        closest_time = itm[1]
+                        closest_dist = itm[0]
+                new_write.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) +
+                                                ". It was never in the alarm zone, and its closest distance was " +
+                                                str(closest_dist)+" at " +
+                                                str(datetime.datetime.fromtimestamp(closest_time))})
+                for key in ac_dt.keys():
+                    if key in ['extras', 'flight_name_id']:
+                        new_write.update({key: ac_dt[key]})
+                    itm = ac_dt[key]
+                    for itr in itm:
+                        if abs(itr[1]-closest_time) < CONFIG['unimportant_save_sec_range']:
+                            new_write[key].append(itr)
+                database.database[aircraft['hex']].insert_one(new_write)
             del plane_history[aircraft['hex']]
             total_uploads += 1
             continue
         if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):  # If we haven't seen this plane before, create a new one
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
-                                                    "start_time": aircraft_json['now'],
+                                                    "extras": {"start_time": aircraft_json['now'], 'in_zone': False,
+                                                               'end_time': None},
                                                     "lat_history": [],
                                                     "lon_history": [],
                                                     "nav_heading_history": [],
@@ -401,9 +422,11 @@ def dump_json(cwd):
 
 if __name__ == '__main__':
     start_directory = os.getcwd()
+    if is_relative_dir:
+        CONFIG['dump1090_dir'] = start_directory + CONFIG['dump1090_dir'][1:]
     start()
     plane_history = {}
-    aircraft_json = json.load(open(start_directory + CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+    aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1

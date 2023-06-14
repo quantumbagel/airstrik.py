@@ -10,3 +10,4 @@ remember: 45 # maximum time in seconds where the aircraft has not sent a packet 
 dump1090_dir: './dump1090' # the storage location of https://github.com/flightaware/dump1090
 json_speed: 0  # time between updates
 min_trip_length: 90 # the minimum time a plane must be seen to be saved to mongod (sec)
+unimportant_save_sec_range: 10 # when a plane is deemed unimportant, how many seconds around its closest should I save?
