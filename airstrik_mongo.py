@@ -20,7 +20,6 @@ parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s r
                                       ' this will be ignored', action='store_true')
 parser.add_argument('-d', '--device', default=0, type=int, help='The index of the RTLSDR device')
 parser.add_argument('--database-out', default='airstrikdb', help='The mongo database to write to')
-parser.add_argument('-l', '--log', action='store_true', help='Whether to output a log or not')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
@@ -28,8 +27,7 @@ time_start = str(time.time())
 end_process = False
 is_relative_dir = CONFIG['dump1090_dir'].startswith('.')
 
-if args.log:
-    open('airstrik' + time_start + '.log', 'x').close()
+
 HOME = (CONFIG['home']['lat'], CONFIG['home']['lon'])
 
 
@@ -231,10 +229,9 @@ def print_planes(plane_history, hexes):
         try:
             hex_code = list(plane_history.keys())[list(plane_history.values()).index(data_plane)]
             if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
-                print_the_plane(data_plane, hex_code)
                 lp += 1
-                if lp - 2 == CONFIG['print_top_planes']:
-                    break
+                if not (lp - 2 >= CONFIG['print_top_planes']):
+                    print_the_plane(data_plane, hex_code)
         except KeyError:  # aircraft no longer exists
             continue
     print("Have added to mongo", total_uploads, 'times.')
@@ -367,7 +364,7 @@ def collect_data(aircraft_json, plane_history):
             except KeyError:
                 continue
             if (aircraft_json['now']-aircraft['seen']) - \
-                    plane_history[aircraft['hex']]['start_time'] < CONFIG['min_trip_length']:
+                    plane_history[aircraft['hex']]['extras']['start_time'] < CONFIG['min_trip_length']:
                 del plane_history[aircraft['hex']]
                 continue
             st = datetime.datetime.fromtimestamp(ac_dt['extras']['start_time'])
