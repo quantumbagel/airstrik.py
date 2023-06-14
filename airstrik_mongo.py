@@ -224,18 +224,20 @@ def print_planes(plane_history, hexes):
             return 10000
 
     lp = 2
+    plns = 0
     sorted_dist = sorted(plane_history.values(), key=get_distance)
     for data_plane in sorted_dist:
         try:
             hex_code = list(plane_history.keys())[list(plane_history.values()).index(data_plane)]
             if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
-                lp += 1
-                if not (lp - 2 >= CONFIG['print_top_planes']):
+                plns += 1
+                if not (plns >= CONFIG['print_top_planes']):
                     print_the_plane(data_plane, hex_code)
+                    lp += 1
         except KeyError:  # aircraft no longer exists
             continue
     print("Have added to mongo", total_uploads, 'times.')
-    print("Currently parsing", lp-2, "planes.")
+    print("Currently parsing", plns, "planes.")
     return lp
 
 
