@@ -20,6 +20,7 @@ parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s r
                                       ' this will be ignored', action='store_true')
 parser.add_argument('-d', '--device', default=0, type=int, help='The index of the RTLSDR device')
 parser.add_argument('--database-out', default='airstrikdb', help='The mongo database to write to')
+parser.add_argument('--no-purge', action='store_true', help="Don't purge other running instances")
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
@@ -77,7 +78,8 @@ def start():
     :return: none
     """
     global end_process
-    subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
+    if not args.no_purge:
+        subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
     mkc = "mkdir -m 777 " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start
     subprocess.run(mkc, shell=True)
     t = threading.Thread(target=run_dump1090, daemon=True)
