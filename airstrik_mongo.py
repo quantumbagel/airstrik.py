@@ -381,7 +381,11 @@ def collect_data(aircraft_json, plane_history):
             else:  # never entered, save everything within some sec of closest packet
                 new_write = {}
                 closest_time = 0
+                if not len(ac_dt['distance_history']):
+                    del plane_history[aircraft['hex']]
+                    continue
                 closest_dist = ac_dt['distance_history'][0][1]
+
                 for itm in ac_dt['distance_history'][1:]:
                     if closest_dist > itm[0]:
                         closest_time = itm[1]
