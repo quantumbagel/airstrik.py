@@ -1,4 +1,4 @@
-un_for: -1  # The amount of seconds to run for. Set this to -1 to run indefinitely
+run_for: -1  # The amount of seconds to run for. Set this to -1 to run indefinitely
 think_ahead: 60  # The amount of seconds to simulate a vehicle's path to check if it intersects with the boundaries
 lat_lon_packet_age_max: 10 # The maximum age of a latitude packet used to calculate the speed (This should be fine)
 home: # Home lat/long point
