@@ -138,7 +138,7 @@ def print_log_mode():
     A function to print a log (systemd mode/docker mode)
     :return: none
     """
-    print("We have added to mongodb", total_uploads, 'times.')
+    print("We have seen", total_uploads, 'plane trips.')
     print("We are on loop", tick)
     plns = 0
     for data_plane in plane_history:
@@ -258,7 +258,7 @@ def print_planes(plane_history, hexes):
                     lp += 1
         except KeyError:  # aircraft no longer exists
             continue
-    print("Have added to mongo", total_uploads, 'times.')
+    print("We have seen", total_uploads, 'plane trips.')
     print("Currently parsing", plns, "planes.")
     return lp
 
@@ -370,7 +370,7 @@ def print_quiet():
         print("Running indefinitely. On tick", tick)
     else:
         print(str(tick + 1) + "/" + str(CONFIG['run_for']))
-    print("Have added to mongo", total_uploads, 'times.')
+    print("We have seen", total_uploads, 'plane trips.')
     print("Currently parsing", plns, "planes.")
 
 
@@ -475,7 +475,8 @@ if __name__ == '__main__':
     # instead of accepting a non-existent packet
     last_printed = 1
     database = mongodb.MongoDBClient(mongodb.uri, args.database_out)
-    print_heading()
+    if not (args.quiet or args.log_mode):
+        print_heading()
     total_uploads = 0
     print()
     tick = 0
