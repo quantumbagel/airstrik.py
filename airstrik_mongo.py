@@ -409,6 +409,11 @@ def collect_data(aircraft_json, plane_history):
                 current_day_alarm_trip[0] += 1
                 current_day_trip[0] += 1
                 closest_time = 0
+                closest_dist = 10000000
+                for dst in plane_history[aircraft['hex']]['distance_history']:
+                    if dst[0] < closest_dist:
+                        closest_time = dst[1]
+                        closest_dist = dst[0]
                 write = {}
                 for item in plane_history[aircraft['hex']].keys():
                     dw = False
