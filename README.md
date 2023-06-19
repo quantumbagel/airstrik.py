@@ -28,7 +28,6 @@ Here's a quick description of the values in `config.yaml`:
 | dump1090_dir               | This should be kept at its current value if you use the installer. If you do not, set this to the directory of Flightaware's dump1090                                                              |
 | json_speed                 | How much time (seconds) that dump1090 waits before getting updates. (default=0)                                                                                                                    |
 | min_trip_length            | The minimum amount of time (seconds) we must receive packets from an aircraft for us to save it to mongodb. (we don't want a plane sending us one packet to be saved to the database) (default=90) |
-| unimportant_save_sec_range | when a plane is deemed unimportant, how many seconds around its closest should I save?                                                                                                             |
 | print_top_planes           | print this amount of planes. -1 is all planes. (default=-1)                                                                                                                                        |
 
 ### Installation
