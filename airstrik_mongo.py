@@ -22,6 +22,7 @@ parser.add_argument('-d', '--device', default=0, type=int, help='The index of th
 parser.add_argument('--database-out', default='airstrikdb', help='The mongo database to write to')
 parser.add_argument('--no-purge', action='store_true', help="Don't purge other running instances")
 parser.add_argument('--log-mode', action='store_true', help='use this if running headless')
+parser.add_argument('--no-start-dump1090', default='', help='provide the dump1090 subdirectory where the data is')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
@@ -77,15 +78,20 @@ def start():
     :return: none
     """
     global end_process
-    if not args.no_purge:
-        subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
-    mkc = "mkdir -m 777 " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start
-    subprocess.run(mkc, shell=True)
-    t = threading.Thread(target=run_dump1090, daemon=True)
-    t.start()
+    if not args.no_start_dump1090:
+        if not args.no_purge:
+            subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
+        mkc = "mkdir -m 777 " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start
+        subprocess.run(mkc, shell=True)
+        t = threading.Thread(target=run_dump1090, daemon=True)
+        t.start()
     print("Loading...", end='')
     sys.stdout.flush()
-    while 'aircraft.json' not in os.listdir(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'):
+    if args.no_start_dump1090:
+        airstrikdir = CONFIG['dump1090_dir'] + '/' + args.no_start_dump1090
+    else:
+        airstrikdir = CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'
+    while 'aircraft.json' not in os.listdir(airstrikdir):
         if end_process:
             print("Failed! (antenna not plugged in?)")
             sys.exit(1)
@@ -163,7 +169,10 @@ def load_aircraft_json(current_time_aircraft):
         if end_process:
             print("Failed! (likely antenna is unplugged)")
             sys.exit(1)
-        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+        if args.no_start_dump1090:
+            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump1090 + '/aircraft.json'))
+        else:
+            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
         new_current_time_aircraft = float(aircraft_json['now'])
         if new_current_time_aircraft != current_time_aircraft:
             break
@@ -474,7 +483,10 @@ if __name__ == '__main__':
         CONFIG['dump1090_dir'] = start_directory + CONFIG['dump1090_dir'][1:]
     start()
     plane_history = {}
-    aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+    if args.no_start_dump1090:
+        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump1090 + '/aircraft.json'))
+    else:
+        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
