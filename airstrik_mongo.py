@@ -65,9 +65,9 @@ def run_dump1090():
                          " --write-json-every " + str(CONFIG['json_speed']) + " --device " + str(args.device),
                          shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     atexit.register(p.terminate)
-    p.communicate()
+    stdout, stderr = p.communicate()
     if p.returncode:
-        print(p.stderr)
+        print(stderr)
         end_process = True
 
 
