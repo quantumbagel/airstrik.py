@@ -1,14 +1,13 @@
-run_for: -1  # The amount of seconds to run for. Set this to -1 to run indefinitely
-think_ahead: 120  # The amount of seconds to simulate a vehicle's path to check if it intersects with the boundaries
+un_for: -1  # The amount of seconds to run for. Set this to -1 to run indefinitely
+think_ahead: 60  # The amount of seconds to simulate a vehicle's path to check if it intersects with the boundaries
 lat_lon_packet_age_max: 10 # The maximum age of a latitude packet used to calculate the speed (This should be fine)
 home: # Home lat/long point
-  lat: 35.77031
-  lon: -78.68078
+  lat: 35.7270309
+  lon: -78.695587
 radius: 20 # Protection radius (km)
 min_alt: 3000  # the minimum allowed altitude
 remember: 45 # maximum time in seconds where the aircraft has not sent a packet for the system to track it
 dump1090_dir: './dump1090' # the storage location of https://github.com/flightaware/dump1090
 json_speed: 0  # time between updates
 min_trip_length: 90 # the minimum time a plane must be seen to be saved to mongod (sec)
-unimportant_save_sec_range: 10 # when a plane is deemed unimportant, how many seconds around its closest should I save?
-print_top_planes: -1  # print this amount of planes (-1 to print all)
+print_top_planes: 25

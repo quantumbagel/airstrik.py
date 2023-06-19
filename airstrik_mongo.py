@@ -21,6 +21,7 @@ parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s r
 parser.add_argument('-d', '--device', default=0, type=int, help='The index of the RTLSDR device')
 parser.add_argument('--database-out', default='airstrikdb', help='The mongo database to write to')
 parser.add_argument('--no-purge', action='store_true', help="Don't purge other running instances")
+parser.add_argument('--log-mode', action='store_true', help='use this if running headless')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
@@ -132,6 +133,26 @@ def calculate_heading_directions(prev, curr):
     return ((heading_rads * 180 / math.pi) + 360) % 360
 
 
+def print_log_mode():
+    """
+    A function to print a log (systemd mode/docker mode)
+    :return: none
+    """
+    print("We have added to mongodb", total_uploads, 'times.')
+    print("We are on loop", tick)
+    plns = 0
+    for data_plane in plane_history:
+        try:
+            hex_code = list(plane_history.keys())[list(plane_history.values()).index(data_plane)]
+            if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
+                plns += 1
+        except KeyError:  # aircraft no longer exists
+            continue
+        except ValueError:
+            continue
+    print("We are currently observing", plns, 'planes')
+
+
 def load_aircraft_json(current_time_aircraft):
     """
     A function to wait for json updates, and return them
@@ -189,7 +210,6 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
         alarm_lat_long = dist_to_home < CONFIG['radius']
         if alarm_lat_long:
             alarm_ll = True
-            plane_data['extras']['in_zone'] = True
             if alarm_time == -1:
                 alarm_time = second
             if dist_to_home < min_radius:
@@ -201,6 +221,8 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= CONFIG['min_alt']
     else:
         alarm = alarm_ll
+    if alarm:
+        plane_data['extras']['alarm_triggered'] = True
     return alarm, alarm_time, min_radius, packet_time
 
 
@@ -361,6 +383,8 @@ def collect_data(aircraft_json, plane_history):
     """
     global total_uploads
     for aircraft in aircraft_json['aircraft']:
+        if aircraft['hex'] not in current_day_planes:
+            current_day_planes.append(aircraft['hex'])
         if aircraft['seen'] > CONFIG['remember']:  # don't even bother / try to upload?
             try:
                 ac_dt = plane_history[aircraft['hex']]
@@ -373,46 +397,40 @@ def collect_data(aircraft_json, plane_history):
             st = datetime.datetime.fromtimestamp(ac_dt['extras']['start_time'])
             et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
             ac_dt['extras'].update({"end_time": aircraft_json['now']})
-            if ac_dt['extras']['in_zone']:
-                ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) +
-                                            ". It was in the alarm zone."})
+
+            if plane_history[aircraft['hex']]['extras']['alarm_triggered']:
+                ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et)})
                 database.database[aircraft['hex']].insert_one(ac_dt)
                 del ac_dt
-            else:  # never entered, save everything within some sec of closest packet
-                new_write = {}
+                if aircraft['hex'] not in current_day_planes:
+                    current_day_planes.append(aircraft['hex'])
+                if aircraft['hex'] not in current_day_alarm_planes:
+                    current_day_alarm_planes.append(aircraft['hex'])
+                current_day_alarm_trip[0] += 1
+                current_day_trip[0] += 1
                 closest_time = 0
-                if not len(ac_dt['distance_history']):
-                    del plane_history[aircraft['hex']]
-                    continue
-                closest_dist = ac_dt['distance_history'][0][1]
+                write = {}
+                for item in plane_history[aircraft['hex']].keys():
+                    dw = False
+                    for kval in plane_history[aircraft['hex']][item][::-1]:
+                        if kval[1] <= closest_time:
+                            write.update({item.replace('_history', ''): kval})
+                            dw = True
+                    if not dw:
+                        write.update({item.replace('_history', ''): None})
 
-                for itm in ac_dt['distance_history'][1:]:
-                    if closest_dist > itm[0]:
-                        closest_time = itm[1]
-                        closest_dist = itm[0]
-                new_write.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et) +
-                                                ". It was never in the alarm zone, and its closest distance was " +
-                                                str(closest_dist)+" at " +
-                                                str(datetime.datetime.fromtimestamp(closest_time))})
-                for key in ac_dt.keys():
-                    if key in ['extras', 'flight_name_id']:
-                        new_write.update({key: ac_dt[key]})
-                        continue
-                    itm = ac_dt[key]
-                    for itr in itm:
-                        if abs(float(itr[1])-closest_time) < CONFIG['unimportant_save_sec_range']:
-                            if key not in new_write.keys():
-                                new_write.update({key: [itr]})
-                            else:
-                                new_write[key].append(itr)
-                database.database[aircraft['hex']].insert_one(new_write)
-                del new_write
+                database.database[aircraft['hex']].insert_one(write)
+            else:
+                if aircraft['hex'] not in current_day_planes:
+                    current_day_planes.append(aircraft['hex'])
+                current_day_trip[0] += 1
             del plane_history[aircraft['hex']]
             total_uploads += 1
             continue
         if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):  # If we haven't seen this plane before, create a new one
+            current_day_trip[0] = current_day_trip[0] + 1
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
-                                                    "extras": {"start_time": aircraft_json['now'], 'in_zone': False,
+                                                    "extras": {"start_time": aircraft_json['now'], 'alarm_triggered': False,
                                                                'end_time': None},
                                                     "lat_history": [],
                                                     "lon_history": [],
@@ -461,13 +479,31 @@ if __name__ == '__main__':
     total_uploads = 0
     print()
     tick = 0
+    current_day_trip = [0]
+    current_day_planes = []
+    current_day_alarm_trip = [0]
+    current_day_alarm_planes = []
+    current_day = datetime.datetime.now().day
     while tick != CONFIG['run_for']:
+        if current_day != datetime.datetime.now().day:
+            database.database['stats'].insert_one({"_id": current_day, "unique_planes": len(current_day_planes),
+                                                   'total_trips': current_day_trip[0],
+                                                   'unique_alarm_planes': len(current_day_alarm_planes),
+                                                   'total_alarm_trips': current_day_alarm_trip[0]})
+            current_day_trip = [0]
+            current_day_planes = []
+            current_day_alarm_trip = [0]
+            current_day_alarm_planes = []
         if end_process:
             print("Failed! (antenna gone?)")
             sys.exit(1)
         aircraft_json, new_aircraft_time = load_aircraft_json(current_time_aircraft)
         current_time_aircraft = new_aircraft_time
         hexes = collect_data(aircraft_json, plane_history)
+        if args.log_mode:
+            print_log_mode()
+            tick += 1
+            continue
         if args.quiet:
             print_quiet()
         else:
