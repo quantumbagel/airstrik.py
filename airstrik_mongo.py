@@ -396,12 +396,7 @@ def collect_data(aircraft_json, plane_history):
                 continue
             st = datetime.datetime.fromtimestamp(ac_dt['extras']['start_time'])
             et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
-            ac_dt['extras'].update({"end_time": aircraft_json['now']})
-
             if plane_history[aircraft['hex']]['extras']['alarm_triggered']:
-                ac_dt.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et)})
-                database.database[aircraft['hex']].insert_one(ac_dt)
-                del ac_dt
                 if aircraft['hex'] not in current_day_planes:
                     current_day_planes.append(aircraft['hex'])
                 if aircraft['hex'] not in current_day_alarm_planes:
@@ -415,7 +410,6 @@ def collect_data(aircraft_json, plane_history):
                         closest_time = dst[1]
                         closest_dist = dst[0]
                 write = {}
-
                 for item in plane_history[aircraft['hex']].keys():
                     if item == 'extras':
                         continue
@@ -427,7 +421,8 @@ def collect_data(aircraft_json, plane_history):
                             dw = True
                     if not dw:
                         write.update({item.replace('_history', ''): None})
-
+                write['extras'].update({"end_time": aircraft_json['now']})
+                write.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et)})
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
