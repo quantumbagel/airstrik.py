@@ -141,7 +141,7 @@ def print_log_mode():
     print("We have seen", total_uploads, 'plane trips.')
     print("We are on loop", tick)
     plns = 0
-    for data_plane in plane_history:
+    for data_plane in plane_history.values():
         try:
             hex_code = list(plane_history.keys())[list(plane_history.values()).index(data_plane)]
             if (aircraft_json['aircraft'][hexes[hex_code]]['seen'] < CONFIG['remember']) and is_not_empty(data_plane):
