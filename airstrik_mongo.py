@@ -415,14 +415,15 @@ def collect_data(aircraft_json, plane_history):
                         continue
                     dw = False
                     for kval in plane_history[aircraft['hex']][item][::-1]:
-                        print(item, kval, plane_history[aircraft['hex']][item])
+                        print(item, kval)
                         if kval[1] <= closest_time:
                             write.update({item.replace('_history', ''): kval})
                             dw = True
                     if not dw:
                         write.update({item.replace('_history', ''): None})
+                write['extras'] = {'start_time': ac_dt['extras']['start_time']}
                 write['extras'].update({"end_time": aircraft_json['now']})
-                write.update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et)})
+                write['extras'].update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et)})
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
