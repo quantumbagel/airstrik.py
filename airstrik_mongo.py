@@ -415,8 +415,10 @@ def collect_data(aircraft_json, plane_history):
                         closest_time = dst[1]
                         closest_dist = dst[0]
                 write = {}
+
                 for item in plane_history[aircraft['hex']].keys():
                     dw = False
+                    print(plane_history[aircraft['hex']][item])
                     for kval in plane_history[aircraft['hex']][item][::-1]:
                         if kval[1] <= closest_time:
                             write.update({item.replace('_history', ''): kval})
