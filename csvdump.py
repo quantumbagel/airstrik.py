@@ -43,7 +43,10 @@ with open(args.out, 'x', newline='') as csvfile:
             write_dict = {'name': item, 'flight_id': flight_name, 'trip': i}
             for it in data.keys():
                 if it not in ['_id', 'alarm', 'extras', 'flight_name_id']:
-                    write_dict.update({it: data[it][0]})
+                    try:
+                        write_dict.update({it: data[it][0]})
+                    except TypeError:
+                        continue
             for it in data['extras'].keys():
                 if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
                     write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
