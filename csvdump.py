@@ -39,5 +39,5 @@ with open(args.out, 'x', newline='') as csvfile:
                 write_dict.update({it: data[it]})
         for it in data['extras'].keys():
             if it != 'alarm_triggered':
-                write_dict.update({it: datetime.fromtimestamp(data[it])})
+                write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
         writer.writerow(write_dict)
