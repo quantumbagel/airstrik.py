@@ -431,7 +431,6 @@ def collect_data(aircraft_json, plane_history):
                         write.update({item.replace('_history', ''): None})
                 write['extras'] = {'start_time': ac_dt['extras']['start_time']}
                 write['extras'].update({"end_time": aircraft_json['now']})
-                write['extras'].update({"commentary": "We saw this aircraft from " + str(st) + " to " + str(et)})
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:

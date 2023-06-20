@@ -38,6 +38,6 @@ with open(args.out, 'x', newline='') as csvfile:
             if it not in ['_id', 'alarm', 'extras']:
                 write_dict.update({it: data[it]})
         for it in data['extras'].keys():
-            if it != 'alarm_triggered':
+            if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
                 write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
         writer.writerow(write_dict)
