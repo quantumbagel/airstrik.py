@@ -2,6 +2,7 @@ import pymongo.errors
 from pymongo.mongo_client import MongoClient
 import argparse
 import csv
+import sys
 
 parser = argparse.ArgumentParser(prog='csvdump.py', description='A program to visualize the planes collected by airstrik_mongo.py', epilog='Go Pack!')
 parser.add_argument('-d', '--database', help='which database in the mongodb to pull from', required=False)
@@ -20,6 +21,7 @@ if (args.database not in all_databases) or (args.database in ['admin', 'config']
     for item in all_databases:
         if item not in ['admin', 'config']:
             print(item)
+    sys.exit(0)
 db = client[args.database]
 colnames = db.list_collection_names()
 
@@ -28,7 +30,7 @@ with open(args.out, 'x', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     for item in colnames:
-        data = db[item].find()
+        data = list(db[item].find())[0]
         write_dict = {'name': item}
         for it in data.keys():
             if it != '_id':
