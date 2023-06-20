@@ -27,23 +27,24 @@ if (args.database not in all_databases) or (args.database in ['admin', 'config']
 db = client[args.database]
 colnames = db.list_collection_names()
 
-fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom', 'calc_heading', 'calc_speed', 'time_until_entry', 'distance']
+fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom', 'calc_heading', 'calc_speed', 'time_until_entry', 'distance', 'trip']
 with open(args.out, 'x', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     for item in colnames:
         if item == 'stats':
             continue
-        data = list(db[item].find())[0]
-        print(data)
-        flight_name = data['flight_name_id']
-        if flight_name is not None:
-            flight_name = flight_name[0]
-        write_dict = {'name': item, 'flight_id': flight_name}
-        for it in data.keys():
-            if it not in ['_id', 'alarm', 'extras', 'flight_name_id']:
-                write_dict.update({it: data[it]})
-        for it in data['extras'].keys():
-            if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
-                write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
-        writer.writerow(write_dict)
+        dat = list(db[item].find())
+        for i, data in enumerate(dat):
+            print(data)
+            flight_name = data['flight_name_id']
+            if flight_name is not None:
+                flight_name = flight_name[0]
+            write_dict = {'name': item, 'flight_id': flight_name, 'trip': i}
+            for it in data.keys():
+                if it not in ['_id', 'alarm', 'extras', 'flight_name_id']:
+                    write_dict.update({it: data[it][0]})
+            for it in data['extras'].keys():
+                if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
+                    write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
+            writer.writerow(write_dict)
