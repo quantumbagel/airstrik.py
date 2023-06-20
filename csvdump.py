@@ -33,6 +33,7 @@ with open(args.out, 'x', newline='') as csvfile:
     writer.writeheader()
     for item in colnames:
         data = list(db[item].find())[0]
+        print(data)
         flight_name = data['flight_name_id']
         if flight_name is not None:
             flight_name = flight_name[0]
