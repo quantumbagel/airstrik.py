@@ -457,7 +457,7 @@ def collect_data(aircraft_json, plane_history):
         plane_data = plane_history[aircraft['hex']]  # A reference to plane
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
-                plane_data['flight_name_id'] = [[aircraft['flight'], aircraft_json['now']]]  # So this plays nice with print_the_plane
+                plane_data['flight_name_id'] = [[aircraft['flight'][:-2], aircraft_json['now']]]  # So this plays nice with print_the_plane
         for item in ['lat', 'lon', 'nav_heading', 'alt_geom']:  # Stats in aircraft_json that are retrievable
             if item in aircraft.keys():
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
