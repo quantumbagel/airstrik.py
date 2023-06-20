@@ -35,7 +35,7 @@ with open(args.out, 'x', newline='') as csvfile:
         data = list(db[item].find())[0]
         write_dict = {'name': item, 'flight_id': data['flight_name_id'][0]}
         for it in data.keys():
-            if it not in ['_id', 'alarm', 'extras']:
+            if it not in ['_id', 'alarm', 'extras', 'flight_name_id']:
                 write_dict.update({it: data[it]})
         for it in data['extras'].keys():
             if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
