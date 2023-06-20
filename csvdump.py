@@ -33,7 +33,10 @@ with open(args.out, 'x', newline='') as csvfile:
     writer.writeheader()
     for item in colnames:
         data = list(db[item].find())[0]
-        write_dict = {'name': item, 'flight_id': data['flight_name_id'][0]}
+        flight_name = data['flight_name_id']
+        if flight_name is not None:
+            flight_name = flight_name[0]
+        write_dict = {'name': item, 'flight_id': flight_name}
         for it in data.keys():
             if it not in ['_id', 'alarm', 'extras', 'flight_name_id']:
                 write_dict.update({it: data[it]})
