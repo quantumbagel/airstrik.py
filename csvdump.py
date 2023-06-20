@@ -40,7 +40,7 @@ with open(args.out, 'x', newline='') as csvfile:
             flight_name = data['flight_name_id']
             if flight_name is not None:
                 flight_name = flight_name[0]
-            write_dict = {'name': item, 'flight_id': flight_name, 'trip': i}
+            write_dict = {'name': item, 'flight_id': flight_name, 'trip': i+1}
             for it in data.keys():
                 if it not in ['_id', 'alarm', 'extras', 'flight_name_id']:
                     try:
