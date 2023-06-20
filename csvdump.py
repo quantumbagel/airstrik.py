@@ -32,6 +32,8 @@ with open(args.out, 'x', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
     for item in colnames:
+        if item == 'stats':
+            continue
         data = list(db[item].find())[0]
         print(data)
         flight_name = data['flight_name_id']
