@@ -1,3 +1,4 @@
+import time
 from datetime import datetime
 
 import pymongo.errors
@@ -17,12 +18,13 @@ def delete_last_line(lines=1):
         sys.stdout.write('\x1b[1A')
         sys.stdout.write('\x1b[2K')
 
+
 parser = argparse.ArgumentParser(prog='csvdump.py', description='A program to visualize the planes collected by airstrik_mongo.py', epilog='Go Pack!')
 parser.add_argument('-d', '--database', help='which database in the mongodb to pull from', required=False)
 parser.add_argument('-u', '--uri', default='mongodb://localhost:27017', help='The URI to connect to (mongodb)')
 parser.add_argument('-o', '--out', default='out.csv', help="The file to output to")
 args = parser.parse_args()
-progre_ht_num = 30
+progress_ht_num = 30
 print("Connecting to MongoDB...")
 client = MongoClient(args.uri)
 delete_last_line()
@@ -44,9 +46,9 @@ with open(args.out, 'x', newline='') as csvfile:
     print()
     for cur, item in enumerate(colnames):
         delete_last_line()
-        pct = (cur+1)/len(colnames) * progre_ht_num
+        pct = (cur+1)/len(colnames) * progress_ht_num
         print("Writing", item,
-              "("+("#"*int(pct))+"."*int(progre_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(colnames))+")")
+              "("+("#"*int(pct))+"."*int(progress_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(colnames))+")")
         sys.stdout.flush()
         if item == 'stats':
             continue
@@ -66,3 +68,7 @@ with open(args.out, 'x', newline='') as csvfile:
                 if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
                     write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
             writer.writerow(write_dict)
+print("Dumped to ", args.out)
+print("Stopping MongoDB...")
+client.close()
+delete_last_line()
