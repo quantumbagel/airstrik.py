@@ -502,7 +502,7 @@ if __name__ == '__main__':
     current_day = datetime.datetime.now().day
     while tick != CONFIG['run_for']:
         if current_day != datetime.datetime.now().day:
-            database.database['stats'].insert_one({"_id": current_day, "unique_planes": len(current_day_planes),
+            database.database['stats'].insert_one({"_id": datetime.datetime.now().date(), "unique_planes": len(current_day_planes),
                                                    'total_trips': current_day_trip[0],
                                                    'unique_alarm_planes': len(current_day_alarm_planes),
                                                    'total_alarm_trips': current_day_alarm_trip[0]})
