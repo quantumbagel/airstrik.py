@@ -6,7 +6,7 @@ from pymongo.mongo_client import MongoClient
 import argparse
 import csv
 import sys
-
+import os
 
 def delete_last_line(lines=1):
     """
@@ -40,6 +40,11 @@ db = client[args.database]
 colnames = db.list_collection_names()
 fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom', 'calc_heading',
               'calc_speed', 'time_until_entry', 'distance', 'trip']
+if args.out in os.listdir():
+    cont = input("The file "+args.out+' already exists! Would you like to delete it? (y/n)')
+    if cont not in ['y', 'yes']:
+        sys.exit(0)
+    os.remove(args.out)
 with open(args.out, 'x', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
@@ -68,7 +73,7 @@ with open(args.out, 'x', newline='') as csvfile:
                 if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
                     write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
             writer.writerow(write_dict)
-print("Dumped to ", args.out)
+print("Dumped to", args.out)
 print("Stopping MongoDB...")
 client.close()
 delete_last_line()
