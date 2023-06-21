@@ -45,12 +45,13 @@ with open(args.out, 'x', newline='') as csvfile:
     for cur, item in enumerate(colnames):
         delete_last_line()
         pct = (cur+1)/len(colnames) * progre_ht_num
-        print("Writing ", item, "("+("#"*int(pct))+"."*int(progre_ht_num-pct)+")")
+        print("Writing", item,
+              "("+("#"*int(pct))+"."*int(progre_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(colnames))+")")
+        sys.stdout.flush()
         if item == 'stats':
             continue
         dat = list(db[item].find())
         for i, data in enumerate(dat):
-            print(data)
             flight_name = data['flight_name_id']
             if flight_name is not None:
                 flight_name = flight_name[0]
