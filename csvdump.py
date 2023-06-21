@@ -6,17 +6,27 @@ import argparse
 import csv
 import sys
 
+
+def delete_last_line(lines=1):
+    """
+    Delete the number of lines given
+    :param lines: The number of lines to delete from stdout
+    :return: nothing
+    """
+    for _ in range(lines):
+        sys.stdout.write('\x1b[1A')
+        sys.stdout.write('\x1b[2K')
+
 parser = argparse.ArgumentParser(prog='csvdump.py', description='A program to visualize the planes collected by airstrik_mongo.py', epilog='Go Pack!')
 parser.add_argument('-d', '--database', help='which database in the mongodb to pull from', required=False)
 parser.add_argument('-u', '--uri', default='mongodb://localhost:27017', help='The URI to connect to (mongodb)')
 parser.add_argument('-o', '--out', default='out.csv', help="The file to output to")
 args = parser.parse_args()
-
+progre_ht_num = 30
 print("Connecting to MongoDB...")
 client = MongoClient(args.uri)
-print("Confirming connection...")
+delete_last_line()
 client.admin.command('ping')
-print("MongoDB is connected.")
 all_databases = client.list_database_names()
 if (args.database not in all_databases) or (args.database in ['admin', 'config']) or args.database is None:
     print("ERROR: You need to provide a valid database name (-d). Here's a list of those databases:")
@@ -26,12 +36,16 @@ if (args.database not in all_databases) or (args.database in ['admin', 'config']
     sys.exit(0)
 db = client[args.database]
 colnames = db.list_collection_names()
-
-fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom', 'calc_heading', 'calc_speed', 'time_until_entry', 'distance', 'trip']
+fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom', 'calc_heading',
+              'calc_speed', 'time_until_entry', 'distance', 'trip']
 with open(args.out, 'x', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
     writer.writeheader()
-    for item in colnames:
+    print()
+    for cur, item in enumerate(colnames):
+        delete_last_line()
+        pct = (cur+1)/len(colnames) * progre_ht_num
+        print("Writing ", item, "("+("#"*int(pct))+"."*int(progre_ht_num-pct)+")")
         if item == 'stats':
             continue
         dat = list(db[item].find())
