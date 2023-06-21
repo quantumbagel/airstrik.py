@@ -439,10 +439,12 @@ def collect_data(aircraft_json, plane_history):
             del plane_history[aircraft['hex']]
             total_uploads += 1
             continue
-        if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):  # If we haven't seen this plane before, create a new one
+        if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):
+            # If we haven't seen this plane before, create a new one
             current_day_trip[0] = current_day_trip[0] + 1
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
-                                                    "extras": {"start_time": aircraft_json['now'], 'alarm_triggered': False,
+                                                    "extras": {"start_time": aircraft_json['now'],
+                                                               'alarm_triggered': False,
                                                                'end_time': None},
                                                     "lat_history": [],
                                                     "lon_history": [],
@@ -456,7 +458,8 @@ def collect_data(aircraft_json, plane_history):
         plane_data = plane_history[aircraft['hex']]  # A reference to plane
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
-                plane_data['flight_name_id'] = [[aircraft['flight'][:-2], aircraft_json['now']]]  # So this plays nice with print_the_plane
+                plane_data['flight_name_id'] = [[aircraft['flight'][:-2], aircraft_json['now']]]
+                # So this plays nice with print_the_plane
         for item in ['lat', 'lon', 'nav_heading', 'alt_geom']:  # Stats in aircraft_json that are retrievable
             if item in aircraft.keys():
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
@@ -502,7 +505,8 @@ if __name__ == '__main__':
     current_day = datetime.datetime.now().day
     while tick != CONFIG['run_for']:
         if current_day != datetime.datetime.now().day:
-            database.database['stats'].insert_one({"_id": datetime.datetime.now().date(), "unique_planes": len(current_day_planes),
+            database.database['stats'].insert_one({"_id": datetime.datetime.now().date(),
+                                                   "unique_planes": len(current_day_planes),
                                                    'total_trips': current_day_trip[0],
                                                    'unique_alarm_planes': len(current_day_alarm_planes),
                                                    'total_alarm_trips': current_day_alarm_trip[0]})
