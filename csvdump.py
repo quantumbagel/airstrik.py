@@ -62,8 +62,10 @@ if args.stats:
             split_item = item.split('.')
             dat = list(db['stats'][split_item[1]].find())
             for i, data in enumerate(dat):
-                write_dict = {}
+                write_dict = {'date': split_item[1]}
                 for it in data.keys():
+                    if it == '_id':
+                        continue
                     write_dict.update({it: data[it]})
                 writer.writerow(write_dict)
 else:
