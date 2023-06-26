@@ -50,15 +50,14 @@ if args.stats:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         print()
-        for cur, item in enumerate(colnames):
+        lc = [i for i in colnames if i.startswith('stats.')]
+        for cur, item in enumerate(lc):
             delete_last_line()
-            pct = (cur + 1) / len(colnames) * progress_ht_num
+            pct = (cur + 1) / len(lc) * progress_ht_num
             print("Writing", item,
                   "(" + ("#" * int(pct)) + "." * int(progress_ht_num - pct) + ") (" + str(cur + 1) + "/" + str(
-                      len(colnames)) + ")")
+                      len(lc)) + ")")
             sys.stdout.flush()
-            if not item.startswith('stats.'):
-                continue
             split_item = item.split('.')
             dat = list(db['stats'][split_item[1]].find())
             for i, data in enumerate(dat):
@@ -75,14 +74,13 @@ else:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         print()
-        for cur, item in enumerate(colnames):
+        lc = [i for i in colnames if not i.startswith('stats')]
+        for cur, item in enumerate(lc):
             delete_last_line()
-            pct = (cur+1)/len(colnames) * progress_ht_num
+            pct = (cur+1)/len(lc) * progress_ht_num
             print("Writing", item,
-                  "("+("#"*int(pct))+"."*int(progress_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(colnames))+")")
+                  "("+("#"*int(pct))+"."*int(progress_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(lc))+")")
             sys.stdout.flush()
-            if item.startswith('stats'):
-                continue
             dat = list(db[item].find())
             for i, data in enumerate(dat):
                 flight_name = data['flight_name_id']
