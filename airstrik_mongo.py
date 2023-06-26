@@ -230,7 +230,7 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= CONFIG['min_alt']
     else:
         alarm = alarm_ll
-    if alarm:
+    if alarm and plane_data['distance_history'][-1][1] < CONFIG['radius']:
         plane_data['extras']['alarm_triggered'] = True
     return alarm, alarm_time, min_radius, packet_time
 
@@ -505,7 +505,7 @@ if __name__ == '__main__':
     current_day = datetime.datetime.now().day
     while tick != CONFIG['run_for']:
         if current_day != datetime.datetime.now().day:
-            database.database['stats'][str(datetime.datetime.now().date())].insert_one(
+            database.database['stats'][str(datetime.datetime.now().date() - datetime.timedelta(days=1))].insert_one(
                 {"_id": str(datetime.datetime.now().date()),
                  "unique_planes": len(current_day_planes),
                  'total_trips': current_day_trip[0],
