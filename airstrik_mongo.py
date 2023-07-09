@@ -230,7 +230,7 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= CONFIG['min_alt']
     else:
         alarm = alarm_ll
-    if alarm and plane_data['distance_history'][-1][1] < CONFIG['radius']:
+    if alarm and (plane_data['distance_history'][-1][1] < CONFIG['radius']):
         plane_data['extras']['alarm_triggered'] = True
     return alarm, alarm_time, min_radius, packet_time
 
