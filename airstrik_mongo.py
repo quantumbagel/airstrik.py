@@ -157,6 +157,8 @@ def print_log_mode():
         except ValueError:
             continue
     print("We are currently observing", plns, 'planes')
+    print("Current alarm plane stats (trip, planes, alarmtrip, alarmplane",
+          current_day_trip[0], len(current_day_planes), current_day_alarm_trip[0], len(current_day_alarm_planes))
 
 
 def load_aircraft_json(current_time_aircraft):
