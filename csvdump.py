@@ -24,6 +24,7 @@ parser.add_argument('-d', '--database', help='which database in the mongodb to p
 parser.add_argument('-u', '--uri', default='mongodb://localhost:27017', help='The URI to connect to (mongodb)')
 parser.add_argument('-o', '--out', default='out.csv', help="The file to output to")
 parser.add_argument('-s', '--stats', action='store_true', help='whether to comb for stats or not')
+parser.add_argument('-n', '--no-warn', action='store_true', help='warn about deleting files or not')
 args = parser.parse_args()
 progress_ht_num = 30
 print("Connecting to MongoDB...")
@@ -40,9 +41,10 @@ if (args.database not in all_databases) or (args.database in ['admin', 'config']
 db = client[args.database]
 colnames = db.list_collection_names()
 if args.out in os.listdir():
-    cont = input("The file " + args.out + ' already exists! Would you like to delete it? (y/n)')
-    if cont not in ['y', 'yes']:
-        sys.exit(0)
+    if not args.no_warn:
+        cont = input("The file " + args.out + ' already exists! Would you like to delete it? (y/n)')
+        if cont not in ['y', 'yes']:
+            sys.exit(0)
     os.remove(args.out)
 if args.stats:
     fieldnames = ['date', 'unique_planes', 'total_trips', 'unique_alarm_planes', 'total_alarm_trips']
