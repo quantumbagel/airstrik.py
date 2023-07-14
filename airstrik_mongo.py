@@ -433,7 +433,7 @@ def collect_data(aircraft_json, plane_history):
                         if item == 'flight_name_id':
                             try:
                                 flight_name = flight_predictor_json[aircraft['hex']]
-                                write.update({'flight_name_id': flight_name})
+                                write.update({'flight_name_id': flight_name+' (p)'})
                                 continue
                             except KeyError:
                                 write.update({'flight_name_id': None})
