@@ -430,7 +430,16 @@ def collect_data(aircraft_json, plane_history):
                             write.update({item.replace('_history', ''): kval})
                             dw = True
                     if not dw:
-                        write.update({item.replace('_history', ''): None})
+                        if item == 'flight_name_id':
+                            try:
+                                flight_name = flight_predictor_json[aircraft['hex']]
+                                write.update({'flight_name_id': flight_name})
+                                continue
+                            except KeyError:
+                                write.update({'flight_name_id': None})
+                                continue
+                        else:
+                            write.update({item.replace('_history', ''): None})
                 write['extras'] = {'start_time': ac_dt['extras']['start_time']}
                 write['extras'].update({"end_time": aircraft_json['now']})
                 database.database[aircraft['hex']].insert_one(write)
@@ -460,7 +469,7 @@ def collect_data(aircraft_json, plane_history):
         plane_data = plane_history[aircraft['hex']]  # A reference to plane
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
-                plane_data['flight_name_id'] = [[aircraft['flight'][:-2], aircraft_json['now']]]
+                plane_data['flight_name_id'] = [[str(aircraft['flight']).replace(' ', ''), aircraft_json['now']]]
                 # So this plays nice with print_the_plane
         for item in ['lat', 'lon', 'nav_heading', 'alt_geom']:  # Stats in aircraft_json that are retrievable
             if item in aircraft.keys():
@@ -491,6 +500,7 @@ if __name__ == '__main__':
         aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump1090 + '/aircraft.json'))
     else:
         aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+    flight_predictor_json = json.load(open('icao.json'))
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
