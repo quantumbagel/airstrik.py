@@ -90,6 +90,7 @@ else:
                 try:
                     for each_filter in data['filters'].keys():
                         each_filter_data = data['filters'][each_filter]
+                        print(each_filter, each_filter_data)
                         ftext += each_filter + ' ' + str(each_filter_data) + ', '
                     ftext = ftext.rsplit(', ')
                     write_dict.update({'filters': ftext})
