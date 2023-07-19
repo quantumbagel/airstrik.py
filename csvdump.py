@@ -92,11 +92,8 @@ else:
                 try:
                     for each_filter in data['filters'].keys():
                         each_filter_data = data['filters'][each_filter]
-                        print(each_filter, each_filter_data)
-                        ftext += each_filter + ' (' + str(each_filter_data['dist']) \
-                                 + ', ' + str(each_filter_data['alt']) + '), '
-                    ftext = ftext.rsplit(', ')
-                    print(ftext)
+                        ftext += (each_filter + ' (' + str(each_filter_data['dist']) + ', ' + str(each_filter_data['alt']) + '), ')
+                    ftext = ftext[:-2]
                     write_dict.update({'filters': ftext})
                 except KeyError:
                     print('this instance is not compatible with filters!')
