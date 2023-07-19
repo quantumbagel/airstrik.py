@@ -8,9 +8,9 @@ import csv
 import sys
 import os
 
-
-
-parser = argparse.ArgumentParser(prog='csvdump.py', description='A program to visualize the planes collected by airstrik_mongo.py', epilog='Go Pack!')
+parser = argparse.ArgumentParser(prog='csvdump.py',
+                                 description='A program to visualize the planes collected by airstrik_mongo.py',
+                                 epilog='Go Pack!')
 parser.add_argument('-d', '--database', help='which database in the mongodb to pull from', required=False)
 parser.add_argument('-u', '--uri', default='mongodb://localhost:27017', help='The URI to connect to (mongodb)')
 parser.add_argument('-o', '--out', default='out.csv', help="The file to output to")
@@ -59,7 +59,8 @@ if args.stats:
                     write_dict.update({it: data[it]})
                 writer.writerow(write_dict)
 else:
-    fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom', 'calc_heading',
+    fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom',
+                  'calc_heading',
                   'calc_speed', 'time_until_entry', 'distance', 'trip', 'filters']
     with open(args.out, 'x', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -67,16 +68,17 @@ else:
         print()
         lc = [i for i in colnames if not i.startswith('stats')]
         for cur, item in enumerate(lc):
-            pct = (cur+1)/len(lc) * progress_ht_num
+            pct = (cur + 1) / len(lc) * progress_ht_num
             print("Writing", item,
-                  "("+("#"*int(pct))+"."*int(progress_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(lc))+")", flush=True)
+                  "(" + ("#" * int(pct)) + "." * int(progress_ht_num - pct) + ") (" + str(cur + 1) + "/" + str(
+                      len(lc)) + ")", flush=True)
             sys.stdout.flush()
             dat = list(db[item].find())
             for i, data in enumerate(dat):
                 flight_name = data['flight_name_id']
                 if flight_name is not None:
                     flight_name = flight_name[0]
-                write_dict = {'name': item, 'flight_id': flight_name, 'trip': i+1}
+                write_dict = {'name': item, 'flight_id': flight_name, 'trip': i + 1}
                 for it in data.keys():
                     if it not in ['_id', 'alarm', 'extras', 'flight_name_id', 'filters']:
                         try:
@@ -91,7 +93,8 @@ else:
                     for each_filter in data['filters'].keys():
                         each_filter_data = data['filters'][each_filter]
                         print(each_filter, each_filter_data)
-                        ftext += each_filter + ' ' + str(each_filter_data) + ', '
+                        ftext += each_filter + ' (' + str(each_filter_data['dist']) \
+                                 + ', ' + str(each_filter_data['alt']) + '), '
                     ftext = ftext.rsplit(', ')
                     write_dict.update({'filters': ftext})
                 except KeyError:
