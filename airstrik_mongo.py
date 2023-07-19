@@ -474,7 +474,6 @@ def collect_data(aircraft_json, plane_history):
             continue
         if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):
             # If we haven't seen this plane before, create a new one
-            current_day_trip[0] = current_day_trip[0] + 1
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
                                                     "extras": {"start_time": aircraft_json['now'],
                                                                'alarm_triggered': False,
