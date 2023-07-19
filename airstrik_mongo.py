@@ -455,8 +455,11 @@ def collect_data(aircraft_json, plane_history):
                             write.update({item.replace('_history', ''): None})
                 write['extras'] = {'start_time': ac_dt['extras']['start_time']}
                 write['extras'].update({"end_time": aircraft_json['now']})
-                matched_filters = match_filters(write['distance'][0], write['alt_geom'][0])
-                write['filters'] = matched_filters
+                if write['distance'] is not None and write['alt_geom'] is not None:
+                    matched_filters = match_filters(write['distance'][0], write['alt_geom'][0])
+                    write['filters'] = matched_filters
+                else:
+                    write['filters'] = ''
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
