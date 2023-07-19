@@ -8,15 +8,6 @@ import csv
 import sys
 import os
 
-def delete_last_line(lines=1):
-    """
-    Delete the number of lines given
-    :param lines: The number of lines to delete from stdout
-    :return: nothing
-    """
-    for _ in range(lines):
-        sys.stdout.write('\x1b[1A')
-        sys.stdout.write('\x1b[2K')
 
 
 parser = argparse.ArgumentParser(prog='csvdump.py', description='A program to visualize the planes collected by airstrik_mongo.py', epilog='Go Pack!')
@@ -29,7 +20,6 @@ args = parser.parse_args()
 progress_ht_num = 30
 print("Connecting to MongoDB...")
 client = MongoClient(args.uri)
-delete_last_line()
 client.admin.command('ping')
 all_databases = client.list_database_names()
 if (args.database not in all_databases) or (args.database in ['admin', 'config']) or args.database is None:
@@ -54,7 +44,6 @@ if args.stats:
         print()
         lc = [i for i in colnames if i.startswith('stats.')]
         for cur, item in enumerate(lc):
-            delete_last_line()
             pct = (cur + 1) / len(lc) * progress_ht_num
             print("Writing", item,
                   "(" + ("#" * int(pct)) + "." * int(progress_ht_num - pct) + ") (" + str(cur + 1) + "/" + str(
@@ -78,7 +67,6 @@ else:
         print()
         lc = [i for i in colnames if not i.startswith('stats')]
         for cur, item in enumerate(lc):
-            delete_last_line()
             pct = (cur+1)/len(lc) * progress_ht_num
             print("Writing", item,
                   "("+("#"*int(pct))+"."*int(progress_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(lc))+")")
@@ -113,4 +101,4 @@ else:
 print("Dumped to", args.out)
 print("Stopping MongoDB...")
 client.close()
-delete_last_line()
+print('done')
