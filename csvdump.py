@@ -47,7 +47,7 @@ if args.stats:
             pct = (cur + 1) / len(lc) * progress_ht_num
             print("Writing", item,
                   "(" + ("#" * int(pct)) + "." * int(progress_ht_num - pct) + ") (" + str(cur + 1) + "/" + str(
-                      len(lc)) + ")")
+                      len(lc)) + ")", flush=True)
             sys.stdout.flush()
             split_item = item.split('.')
             dat = list(db['stats'][split_item[1]].find())
@@ -69,7 +69,7 @@ else:
         for cur, item in enumerate(lc):
             pct = (cur+1)/len(lc) * progress_ht_num
             print("Writing", item,
-                  "("+("#"*int(pct))+"."*int(progress_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(lc))+")")
+                  "("+("#"*int(pct))+"."*int(progress_ht_num-pct)+") ("+str(cur+1)+"/"+str(len(lc))+")", flush=True)
             sys.stdout.flush()
             dat = list(db[item].find())
             for i, data in enumerate(dat):
