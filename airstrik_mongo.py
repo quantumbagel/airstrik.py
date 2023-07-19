@@ -338,13 +338,17 @@ def calculate_heading_speed_alarm(plane_data, hx):
         plane_data['time_until_entry_history'].append([inp, current_time_aircraft])
 
 
-def match_filters(closest_dist, closest_alt):
+def match_filters(closest_dist, closest_alt=None):
     all_filters = CONFIG['filters']
     filter_structure = {}
     for each_filter in all_filters.keys():
         distance = all_filters[each_filter][0]
         altitude = all_filters[each_filter][1]
-        if closest_dist <= distance and closest_alt <= altitude:
+        if closest_alt is None:
+            alt_check = True
+        else:
+            alt_check = closest_alt <= altitude
+        if closest_dist <= distance and alt_check:
             filter_structure.update({each_filter: {'dist': distance, 'alt': altitude}})
     return filter_structure
 
@@ -446,7 +450,7 @@ def collect_data(aircraft_json, plane_history):
                                 flight_predictor_json = json.load(open(start_directory + '/icao.json'))
                                 flight_name = flight_predictor_json[aircraft['hex']]
                                 del flight_predictor_json
-                                write.update({'flight_name_id': flight_name+' (p)'})
+                                write.update({'flight_name_id': [flight_name+' (p)', aircraft_json['now']]})
                                 continue
                             except KeyError:
                                 write.update({'flight_name_id': None})
@@ -455,11 +459,11 @@ def collect_data(aircraft_json, plane_history):
                             write.update({item.replace('_history', ''): None})
                 write['extras'] = {'start_time': ac_dt['extras']['start_time']}
                 write['extras'].update({"end_time": aircraft_json['now']})
-                if write['distance'] is not None and write['alt_geom'] is not None:
+                if write['alt_geom'] is not None:
                     matched_filters = match_filters(write['distance'][0], write['alt_geom'][0])
                     write['filters'] = matched_filters
                 else:
-                    write['filters'] = {}
+                    write['filters'] = match_filters(write['distance'][0])
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
