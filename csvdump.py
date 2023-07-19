@@ -71,7 +71,7 @@ if args.stats:
                 writer.writerow(write_dict)
 else:
     fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom', 'calc_heading',
-                  'calc_speed', 'time_until_entry', 'distance', 'trip']
+                  'calc_speed', 'time_until_entry', 'distance', 'trip', 'filters']
     with open(args.out, 'x', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
@@ -90,7 +90,7 @@ else:
                     flight_name = flight_name[0]
                 write_dict = {'name': item, 'flight_id': flight_name, 'trip': i+1}
                 for it in data.keys():
-                    if it not in ['_id', 'alarm', 'extras', 'flight_name_id']:
+                    if it not in ['_id', 'alarm', 'extras', 'flight_name_id', 'filters']:
                         try:
                             write_dict.update({it: data[it][0]})
                         except TypeError:
@@ -98,7 +98,18 @@ else:
                 for it in data['extras'].keys():
                     if it not in ['alarm_triggered', 'commentary']:  # commentary for legacy db
                         write_dict.update({it: datetime.fromtimestamp(data['extras'][it])})
+                ftext = ''
+                try:
+                    for each_filter in data['filters'].keys():
+                        each_filter_data = data['filters'][each_filter]
+                        ftext += each_filter + ' ' + str(each_filter_data) + ', '
+                    ftext = ftext.rsplit(', ')
+                    write_dict.update({'filters': ftext})
+                except KeyError:
+                    print('this instance is not compatible with filters!')
+                    write_dict.update({'filters': ''})
                 writer.writerow(write_dict)
+
 print("Dumped to", args.out)
 print("Stopping MongoDB...")
 client.close()

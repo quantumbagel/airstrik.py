@@ -4,10 +4,11 @@ lat_lon_packet_age_max: 10 # The maximum age of a latitude packet used to calcul
 home: # Home lat/long point
   lat: 35.7270309
   lon: -78.695587
-radius: 20 # Protection radius (km)
-min_alt: 3000  # the minimum allowed altitude
 remember: 45 # maximum time in seconds where the aircraft has not sent a packet for the system to track it
 dump1090_dir: './dump1090' # the storage location of https://github.com/flightaware/dump1090
 json_speed: 0  # time between updates
 min_trip_length: 90 # the minimum time a plane must be seen to be saved to mongod (sec)
-print_top_planes: 25
+print_top_planes: 25 # the number of closest planes to print in normal mode
+filters:
+  close: [10, 1000] # write filters here with the format [dist(km), alt(m)]
+  far: [15, 1300]

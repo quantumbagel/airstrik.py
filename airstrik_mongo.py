@@ -218,7 +218,7 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
 
         new_coords = (new_lat, new_long)
         dist_to_home = geopy.distance.geodesic(new_coords, HOME).km
-        alarm_lat_long = dist_to_home < CONFIG['radius']
+        alarm_lat_long = dist_to_home < most_generous_dist
         if alarm_lat_long:
             alarm_ll = True
             if alarm_time == -1:
@@ -229,10 +229,10 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
                 break
             last_radius = dist_to_home
     if len(plane_data['alt_geom_history']):
-        alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= CONFIG['min_alt']
+        alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= most_generous_alt
     else:
         alarm = alarm_ll
-    if alarm and (plane_data['distance_history'][-1][0] < CONFIG['radius']):
+    if alarm and (plane_data['distance_history'][-1][0] < most_generous_dist):
         plane_data['extras']['alarm_triggered'] = True
     return alarm, alarm_time, min_radius, packet_time
 
@@ -336,6 +336,17 @@ def calculate_heading_speed_alarm(plane_data, hx):
         inp = alarm_time - date_old
     if len(plane_data['time_until_entry_history']) == 0 or plane_data['time_until_entry_history'][-1][0] != inp:
         plane_data['time_until_entry_history'].append([inp, current_time_aircraft])
+
+
+def match_filters(closest_dist, closest_alt):
+    all_filters = CONFIG['filters']
+    filter_structure = {}
+    for each_filter in all_filters.keys():
+        distance = all_filters[each_filter][0]
+        altitude = all_filters[each_filter][1]
+        if closest_dist <= distance and closest_alt <= altitude:
+            filter_structure.update({each_filter: {'dist': distance, 'alt': altitude}})
+    return filter_structure
 
 
 def calculate_distance(plane_data):
@@ -444,6 +455,8 @@ def collect_data(aircraft_json, plane_history):
                             write.update({item.replace('_history', ''): None})
                 write['extras'] = {'start_time': ac_dt['extras']['start_time']}
                 write['extras'].update({"end_time": aircraft_json['now']})
+                matched_filters = match_filters(write['distance'], write['alt_geom'])
+                write['filters'] = matched_filters
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
@@ -516,6 +529,8 @@ if __name__ == '__main__':
     current_day_alarm_trip = [0]
     current_day_alarm_planes = []
     current_day = datetime.datetime.now().day
+    most_generous_alt = max([i[1] for i in CONFIG['filters'].values()])
+    most_generous_dist = max([i[0] for i in CONFIG['filters'].values()])
     while tick != CONFIG['run_for']:
         if current_day != datetime.datetime.now().day:
             database.database['stats'][str(datetime.datetime.now().date() - datetime.timedelta(days=1))].insert_one(
