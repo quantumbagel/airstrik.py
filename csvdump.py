@@ -96,6 +96,7 @@ else:
                         ftext += each_filter + ' (' + str(each_filter_data['dist']) \
                                  + ', ' + str(each_filter_data['alt']) + '), '
                     ftext = ftext.rsplit(', ')
+                    print(ftext)
                     write_dict.update({'filters': ftext})
                 except KeyError:
                     print('this instance is not compatible with filters!')
