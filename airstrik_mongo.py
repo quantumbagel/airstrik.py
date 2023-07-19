@@ -409,8 +409,6 @@ def collect_data(aircraft_json, plane_history):
     """
     global total_uploads
     for aircraft in aircraft_json['aircraft']:
-        if aircraft['hex'] not in current_day_planes:
-            current_day_planes.append(aircraft['hex'])
         if aircraft['seen'] > CONFIG['remember']:  # don't even bother / try to upload?
             try:
                 ac_dt = plane_history[aircraft['hex']]
