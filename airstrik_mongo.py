@@ -418,14 +418,7 @@ def collect_data(aircraft_json, plane_history):
                     plane_history[aircraft['hex']]['extras']['start_time'] < CONFIG['min_trip_length']:
                 del plane_history[aircraft['hex']]
                 continue
-            st = datetime.datetime.fromtimestamp(ac_dt['extras']['start_time'])
-            et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
             if plane_history[aircraft['hex']]['extras']['alarm_triggered']:
-                if aircraft['hex'] not in current_day_planes:
-                    current_day_planes.append(aircraft['hex'])
-                if aircraft['hex'] not in current_day_alarm_planes:
-                    current_day_alarm_planes.append(aircraft['hex'])
-
                 closest_time = 0
                 closest_dist = 10000000
                 for dst in plane_history[aircraft['hex']]['distance_history']:
@@ -468,6 +461,10 @@ def collect_data(aircraft_json, plane_history):
                         del plane_history[aircraft['hex']]
                         continue
                     write['filters'] = matched_filters
+                if aircraft['hex'] not in current_day_planes:
+                    current_day_planes.append(aircraft['hex'])
+                if aircraft['hex'] not in current_day_alarm_planes:
+                    current_day_alarm_planes.append(aircraft['hex'])
                 current_day_alarm_trip[0] += 1
                 current_day_trip[0] += 1
                 database.database[aircraft['hex']].insert_one(write)
@@ -546,7 +543,7 @@ if __name__ == '__main__':
     while tick != CONFIG['run_for']:
         if current_day != datetime.datetime.now().day:
             database.database['stats'][str(datetime.datetime.now().date() - datetime.timedelta(days=1))].insert_one(
-                {"_id": str(datetime.datetime.now().date()),
+                {"_id": str(datetime.datetime.now().date() - datetime.timedelta(days=1)),
                  "unique_planes": len(current_day_planes),
                  'total_trips': current_day_trip[0],
                  'unique_alarm_planes': len(current_day_alarm_planes),
@@ -555,6 +552,7 @@ if __name__ == '__main__':
             current_day_planes = []
             current_day_alarm_trip = [0]
             current_day_alarm_planes = []
+            current_day = datetime.datetime.now().day
         if end_process:
             print("Failed! (antenna gone?)")
             sys.exit(1)
