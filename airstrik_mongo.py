@@ -425,8 +425,7 @@ def collect_data(aircraft_json, plane_history):
                     current_day_planes.append(aircraft['hex'])
                 if aircraft['hex'] not in current_day_alarm_planes:
                     current_day_alarm_planes.append(aircraft['hex'])
-                current_day_alarm_trip[0] += 1
-                current_day_trip[0] += 1
+
                 closest_time = 0
                 closest_dist = 10000000
                 for dst in plane_history[aircraft['hex']]['distance_history']:
@@ -469,7 +468,8 @@ def collect_data(aircraft_json, plane_history):
                         del plane_history[aircraft['hex']]
                         continue
                     write['filters'] = matched_filters
-
+                current_day_alarm_trip[0] += 1
+                current_day_trip[0] += 1
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
