@@ -277,11 +277,12 @@ def print_planes(plane_history, hexes):
 def raise_alarm(hx, plane_data):
     """
     Raise the alarm!
-    :param hx: the plane id
+    :param hx: the hex of the plane
     :param plane_data: The data of the plane triggering the alarm
     :return: nothing
     """
-    pass
+    print("ALARM SET OFF!!!1!!")
+    print(hx, plane_data)
 
 
 def get_current_lat_long(plane_data):
