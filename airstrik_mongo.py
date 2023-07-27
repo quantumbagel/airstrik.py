@@ -24,6 +24,7 @@ parser.add_argument('--no-purge', action='store_true', help="Don't purge other r
 parser.add_argument('--log-mode', action='store_true', help='use this if running headless')
 # ADD FLAG for --run-978
 parser.add_argument('--no-start-dump', default='', help='provide the dump subdirectory where the data is')
+parser.add_argument('--run-dump-978', action='store_true', help='run dump 978?')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
@@ -101,7 +102,10 @@ def start():
             subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
         mkc = "mkdir -m 777 " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start
         subprocess.run(mkc, shell=True)
-        t = threading.Thread(target=run_dump1090, daemon=True)
+        if not args.run_dump_978:
+            t = threading.Thread(target=run_dump1090, daemon=True)
+        else:
+            t = threading.Thread(target=run_dump978, daemon=True)
         t.start()
     print("Loading...", end='')
     sys.stdout.flush()
