@@ -18,11 +18,12 @@ parser.add_argument('-q', '--quiet', action='store_true')
 parser.add_argument('-c', '--config', default='config.yaml', help='The config file\'s location (yaml). ')
 parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s run_for property is indefinite,'
                                       ' this will be ignored', action='store_true')
-parser.add_argument('-d', '--device', default=0, type=int, help='The index of the RTLSDR device')
+parser.add_argument('-d', '--device', default="0", type=str, help='The index/serial of the RTLSDR device')
 parser.add_argument('--database-out', default='airstrikdb', help='The mongo database to write to')
 parser.add_argument('--no-purge', action='store_true', help="Don't purge other running instances")
 parser.add_argument('--log-mode', action='store_true', help='use this if running headless')
-parser.add_argument('--no-start-dump1090', default='', help='provide the dump1090 subdirectory where the data is')
+# ADD FLAG for --run-978
+parser.add_argument('--no-start-dump', default='', help='provide the dump subdirectory where the data is')
 args = parser.parse_args()
 config_file = ruamel.yaml.YAML()
 CONFIG = config_file.load(open(args.config))
@@ -55,6 +56,9 @@ def is_not_empty(d):
     return False
 
 
+
+
+
 def run_dump1090():
     """
     Run dump1090 as a daemon subprocess
@@ -78,7 +82,7 @@ def start():
     :return: none
     """
     global end_process
-    if not args.no_start_dump1090:
+    if not args.no_start_dump:
         if not args.no_purge:
             subprocess.run("rm -rf " + CONFIG['dump1090_dir'] + "/airstrik_data*", shell=True)
         mkc = "mkdir -m 777 " + CONFIG['dump1090_dir'] + "/airstrik_data" + time_start
@@ -87,8 +91,8 @@ def start():
         t.start()
     print("Loading...", end='')
     sys.stdout.flush()
-    if args.no_start_dump1090:
-        airstrikdir = CONFIG['dump1090_dir'] + '/' + args.no_start_dump1090
+    if args.no_start_dump:
+        airstrikdir = CONFIG['dump1090_dir'] + '/' + args.no_start_dump
     else:
         airstrikdir = CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'
     while 'aircraft.json' not in os.listdir(airstrikdir):
@@ -193,7 +197,7 @@ def patch_add(aircraft, val_name, data):
         aircraft[val_name].append(data)
 
 
-def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
+def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_data):
     """
     Calculate the alarm information by simulating the plane given in plane_data
     :param current_lat_long: The current lat/long of the plane
@@ -215,7 +219,6 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
         new_long = long_change_sec * (second + 1) + current_lat_long[1]
         if new_lat > 90 or new_lat < -90 or new_long > 90 or new_long < -90:
             break
-
         new_coords = (new_lat, new_long)
         dist_to_home = geopy.distance.geodesic(new_coords, HOME).km
         alarm_lat_long = dist_to_home < most_generous_dist
@@ -228,6 +231,8 @@ def get_alarm_info(current_lat_long, last_lat_long, time_between, plane_data):
             if dist_to_home > last_radius:
                 break
             last_radius = dist_to_home
+    if -1 < alarm_time < CONFIG['alarm_eta_trigger']:
+        raise_alarm(hex, plane_data)
     if len(plane_data['alt_geom_history']):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= most_generous_alt
     else:
@@ -324,10 +329,8 @@ def calculate_heading_speed_alarm(plane_data, hx):
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
     ncalc_speed = [round(dist_xz / time_between * 3.6, 4), plane_data['lat_history'][-1][1]]  # same as heading
     patch_add(plane_data, 'calc_speed_history', ncalc_speed)
-    alarm, alarm_time, min_radius, packet_time = get_alarm_info(current_lat_long, oldest_lat_long, time_between,
+    alarm, alarm_time, min_radius, packet_time = get_alarm_info(hx, current_lat_long, oldest_lat_long, time_between,
                                                                 plane_data)
-    if alarm:
-        raise_alarm(hx, plane_data)
     date_old = current_time_aircraft - packet_time
     if len(plane_data['alarm_history']) == 0 or plane_data['alarm_history'][-1][0] != alarm:
         plane_data['alarm_history'].append([alarm, current_time_aircraft])
@@ -335,8 +338,6 @@ def calculate_heading_speed_alarm(plane_data, hx):
         inp = 'NO'
     else:
         inp = alarm_time - date_old
-    if len(plane_data['time_until_entry_history']) == 0 or plane_data['time_until_entry_history'][-1][0] != inp:
-        plane_data['time_until_entry_history'].append([inp, current_time_aircraft])
 
 
 def match_filters(closest_dist, closest_alt=None):
@@ -374,7 +375,7 @@ def print_heading():
     if not args.quiet:
         print(" " * 8, end='')
         for item in ['flight', 'lat', 'lon', 'nav_heading', 'alt_geom',
-                     'calc_heading', 'calc_speed', 'alarm', 'time_until_entry', 'distance']:
+                     'calc_heading', 'calc_speed', 'alarm', 'distance']:
             print(item + " " * 10, end='')
         print()
     else:
@@ -489,7 +490,6 @@ def collect_data(aircraft_json, plane_history):
                                                     "calc_heading_history": [],
                                                     "calc_speed_history": [],
                                                     'alarm_history': [],
-                                                    'time_until_entry_history': [],
                                                     'distance_history': []}})
         plane_data = plane_history[aircraft['hex']]  # A reference to plane
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
