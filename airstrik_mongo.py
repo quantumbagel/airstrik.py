@@ -58,6 +58,20 @@ def is_not_empty(d):
 
 
 
+def run_dump978():
+    """
+    Run dump978 as a daemon subprocess
+    :return: None
+    """
+    global end_process
+    os.chdir(CONFIG['dump1090_dir'])
+    p = subprocess.Popen("sudo rtl_sdr -d" + args.device +
+                         " -f 978000000 -s 2083334 -g 49.6 - | ./dump978 | ./uat2json airstrikdata")
+    atexit.register(p.terminate)
+    stdout, stderr = p.communicate()
+    if p.returncode:
+        print(stderr)
+        end_process = True
 
 def run_dump1090():
     """
