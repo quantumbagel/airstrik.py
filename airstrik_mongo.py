@@ -342,6 +342,9 @@ def calculate_heading_speed_alarm(plane_data, hx):
     time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][old_index][1]
     # Heading
     heading_xz = calculate_heading_directions(oldest_lat_long, current_lat_long)
+    if len(plane_history['nav_heading_history']):
+        print("CALC-HEADING LOG: (calc, nav, platlon, clatlon)",
+              heading_xz, plane_history['nav_heading_history'][-1][0], oldest_lat_long, current_lat_long)
     # Calculated time/value pair
     ncalc_heading = [heading_xz, plane_data['lat_history'][-1][1]]
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
