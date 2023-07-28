@@ -549,6 +549,8 @@ if __name__ == '__main__':
         aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump + '/aircraft.json'))
     else:
         aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+    if args.run_dump_978:
+        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrikdata'))
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
