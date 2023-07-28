@@ -196,7 +196,9 @@ def load_aircraft_json(current_time_aircraft):
         if end_process:
             print("Failed! (likely antenna is unplugged)")
             sys.exit(1)
-        if args.no_start_dump:
+        if args.run_dump_978:
+            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrikdata/aircraft.json'))
+        elif args.no_start_dump:
             aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump+ '/aircraft.json'))
         else:
             aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
