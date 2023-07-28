@@ -67,7 +67,7 @@ def run_dump978():
     global end_process
     os.chdir(CONFIG['dump1090_dir'])
     p = subprocess.Popen("sudo rtl_sdr -d" + args.device +
-                         " -f 978000000 -s 2083334 -g 49.6 - | ./dump978/dump978 | ./dump978/uat2json airstrikdata", shell=True,
+                         " -f 978000000 -s 2083334 -g 49.6 - | ./dump978 | ./uat2json airstrikdata", shell=True,
                          stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
     atexit.register(p.terminate)
     stdout, stderr = p.communicate()
