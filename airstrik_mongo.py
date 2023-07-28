@@ -546,7 +546,7 @@ if __name__ == '__main__':
     start()
     plane_history = {}
     if args.run_dump_978:
-        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrikdata'))
+        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrikdata/aircraft.json'))
     elif args.no_start_dump:
         aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump + '/aircraft.json'))
     else:
