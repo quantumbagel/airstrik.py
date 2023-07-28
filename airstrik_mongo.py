@@ -196,8 +196,8 @@ def load_aircraft_json(current_time_aircraft):
         if end_process:
             print("Failed! (likely antenna is unplugged)")
             sys.exit(1)
-        if args.no_start_dump1090:
-            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump1090 + '/aircraft.json'))
+        if args.no_start_dump:
+            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump+ '/aircraft.json'))
         else:
             aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
         new_current_time_aircraft = float(aircraft_json['now'])
@@ -545,8 +545,8 @@ if __name__ == '__main__':
         CONFIG['dump1090_dir'] = start_directory + CONFIG['dump1090_dir'][1:]
     start()
     plane_history = {}
-    if args.no_start_dump1090:
-        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump1090 + '/aircraft.json'))
+    if args.no_start_dump:
+        aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump + '/aircraft.json'))
     else:
         aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
