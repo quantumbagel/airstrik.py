@@ -114,6 +114,8 @@ def start():
         airstrikdir = CONFIG['dump1090_dir'] + '/' + args.no_start_dump
     else:
         airstrikdir = CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'
+    if args.run_dump_978:
+        airstrikdir = CONFIG['dump1090_dir']+'/airstrikdata'
     while 'aircraft.json' not in os.listdir(airstrikdir):
         if end_process:
             print("Failed! (antenna not plugged in?)")
