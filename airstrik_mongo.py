@@ -562,7 +562,7 @@ if __name__ == '__main__':
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
-    database = mongodb.MongoDBClient(mongodb.uri, args.database_out)
+    database = mongodb.MongoDBClient(CONFIG['mongo-address'], args.database_out)
     if not (args.quiet or args.log_mode):
         print_heading()
     total_uploads = 0
