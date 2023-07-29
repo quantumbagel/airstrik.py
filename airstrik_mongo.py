@@ -310,7 +310,6 @@ def raise_alarm(hx, plane_data):
     :return: nothing
     """
     print("ALARM SET OFF!!!1!!")
-    print(hx, plane_data)
 
 
 def get_current_lat_long(plane_data):
