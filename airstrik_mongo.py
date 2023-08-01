@@ -219,7 +219,17 @@ def patch_add(aircraft, val_name, data):
     if data not in aircraft[val_name]:
         aircraft[val_name].append(data)
 
-
+def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
+    pi_c = math.pi / 180
+    starting_lat = starting_lat_long[0] * pi_c
+    starting_lon = starting_lat_long[1] * pi_c
+    distance = time_traveled*speed
+    earth_radius_m = 6371000
+    angular_distance = distance/earth_radius_m
+    predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
+                                + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
+    predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat, math.cos(angular_distance) - math.sin(starting_lat) * math.sin(predicted_lat)))
+    return (predicted_lat / pi_c, predicted_lon / pi_c)
 def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_data):
     """
     Calculate the alarm information by simulating the plane given in plane_data
@@ -230,6 +240,7 @@ def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_dat
     :return: whether the alarm should be raised, the time we have, and how close to the center it will get,
      as well as when this was updated
     """
+
     lat_change_sec = (current_lat_long[0] - last_lat_long[0]) / time_between
     long_change_sec = (current_lat_long[1] - last_lat_long[1]) / time_between
     min_radius = 100000000
@@ -238,8 +249,12 @@ def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_dat
     alarm_ll = False
     last_radius = 100000000
     for second in range(CONFIG['think_ahead']):
-        new_lat = lat_change_sec * (second + 1) + current_lat_long[0]
-        new_long = long_change_sec * (second + 1) + current_lat_long[1]
+        if len(plane_data['nav_heading_history']):
+            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0], plane_data['calc_speed_history'][-1][0], second)
+            print("PREDICTED", new_lat, new_long, lat_change_sec * (second + 1) + current_lat_long[0], long_change_sec * (second + 1) + current_lat_long[1])
+        else:
+            new_lat = lat_change_sec * (second + 1) + current_lat_long[0]
+            new_long = long_change_sec * (second + 1) + current_lat_long[1]
         if new_lat > 90 or new_lat < -90 or new_long > 90 or new_long < -90:
             break
         new_coords = (new_lat, new_long)
@@ -346,15 +361,6 @@ def calculate_heading_speed_alarm(plane_data, hx):
     time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][old_index][1]
     # Heading
     heading_xz = calculate_heading_directions(oldest_lat_long, current_lat_long)
-    try:
-        if len(plane_data['nav_heading_history']):
-            error = abs(heading_xz - plane_data['nav_heading_history'][-1][0])
-            if error > 3:
-                print("CALC-HEADING LOG: (calc, nav, platlon, clatlon)",
-                      heading_xz, plane_data['nav_heading_history'][-1][0], oldest_lat_long, current_lat_long, error)
-
-    except KeyError:
-        print(end='')
     # Calculated time/value pair
     ncalc_heading = [heading_xz, plane_data['lat_history'][-1][1]]
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
