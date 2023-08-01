@@ -348,8 +348,8 @@ def calculate_heading_speed_alarm(plane_data, hx):
     heading_xz = calculate_heading_directions(oldest_lat_long, current_lat_long)
     try:
         if len(plane_data['nav_heading_history']):
-            error = abs(heading_xz - plane_data['nav_heading_history'][-1][0])/heading_xz*100
-            if error > 1:
+            error = abs(heading_xz - plane_data['nav_heading_history'][-1][0])
+            if error > 3:
                 print("CALC-HEADING LOG: (calc, nav, platlon, clatlon)",
                       heading_xz, plane_data['nav_heading_history'][-1][0], oldest_lat_long, current_lat_long, error)
 
