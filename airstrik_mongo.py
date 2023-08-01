@@ -350,7 +350,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
         if len(plane_data['nav_heading_history']):
             print("CALC-HEADING LOG: (calc, nav, platlon, clatlon)",
                   heading_xz, plane_data['nav_heading_history'][-1][0], oldest_lat_long, current_lat_long,
-                  abs(current_lat_long - oldest_lat_long)/oldest_lat_long)
+                  abs(heading_xz - plane_data['nav_heading_history'][-1][0])/heading_xz)
     except KeyError:
         print(end='')
     # Calculated time/value pair
