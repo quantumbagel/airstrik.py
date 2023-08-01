@@ -259,7 +259,7 @@ def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_dat
     for second in range(CONFIG['think_ahead']):
         if len(plane_data['nav_heading_history']):
             new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0], plane_data['calc_speed_history'][-1][0], second)
-            print("PREDICTED", current_lat_long, second, new_lat, new_long, lat_change_sec * (second + 1) + current_lat_long[0], long_change_sec * (second + 1) + current_lat_long[1], plane_data['nav_heading_history'][-1][0])
+            print("PREDICTED", current_lat_long, second, new_lat, new_long, lat_change_sec * (second + 1) + current_lat_long[0], long_change_sec * (second + 1) + current_lat_long[1], plane_data['nav_heading_history'][-1][0], plane_data['calc_heading_history'][-1][0])
         else:
             new_lat = lat_change_sec * (second + 1) + current_lat_long[0]
             new_long = long_change_sec * (second + 1) + current_lat_long[1]
