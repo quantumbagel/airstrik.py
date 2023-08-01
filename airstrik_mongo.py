@@ -220,6 +220,14 @@ def patch_add(aircraft, val_name, data):
         aircraft[val_name].append(data)
 
 def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
+    """
+    A function to predict lat long based on information given.
+    :param starting_lat_long: The starting coordinates
+    :param bearing: The bearing of the plane
+    :param speed: The speed of the plane
+    :param time_traveled: The time the plane has been traveling for
+    :return: The predicted location
+    """
     pi_c = math.pi / 180
     starting_lat = starting_lat_long[0] * pi_c
     starting_lon = starting_lat_long[1] * pi_c
@@ -228,7 +236,7 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     angular_distance = distance/earth_radius_m
     predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
                                 + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
-    predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat, math.cos(angular_distance) - math.sin(starting_lat) * math.sin(predicted_lat)))
+    predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat), math.cos(angular_distance) - math.sin(starting_lat) * math.sin(predicted_lat))
     return (predicted_lat / pi_c, predicted_lon / pi_c)
 def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_data):
     """
