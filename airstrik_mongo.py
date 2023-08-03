@@ -16,8 +16,6 @@ parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple progr
                                                                  'heading towards the AERPAW field.', epilog='Go Pack!')
 parser.add_argument('-q', '--quiet', action='store_true')
 parser.add_argument('-c', '--config', default='config.yaml', help='The config file\'s location (yaml). ')
-parser.add_argument('--no-dump', help='Don\'t dump to json. NOTE: if config\'s run_for property is indefinite,'
-                                      ' this will be ignored', action='store_true')
 parser.add_argument('-d', '--device', default="0", type=str, help='The index/serial of the RTLSDR device')
 parser.add_argument('--database-out', default='airstrikdb', help='The mongo database to write to')
 parser.add_argument('--no-purge', action='store_true', help="Don't purge other running instances")
@@ -242,12 +240,10 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     return predicted_lat / pi_c, predicted_lon / pi_c
 
 
-def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_data):
+def get_alarm_info(hex, current_lat_long, plane_data):
     """
     Calculate the alarm information by simulating the plane given in plane_data
     :param current_lat_long: The current lat/long of the plane
-    :param last_lat_long: The last lat/long of the plane
-    :param time_between: The time between these two pairs of lat/long
     :param plane_data: the data for the plane
     :return: whether the alarm should be raised, the time we have, and how close to the center it will get,
      as well as when this was updated
@@ -334,7 +330,7 @@ def raise_alarm(hx, plane_data):
     :param plane_data: The data of the plane triggering the alarm
     :return: nothing
     """
-    print("ALARM SET OFF!!!1!!")
+    print("The alarm has been set off by plane", plane_data['extras']['flight_name_id'])
 
 
 def get_current_lat_long(plane_data):
@@ -376,8 +372,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
     ncalc_speed = [round(dist_xz / time_between * 3.6, 4), plane_data['lat_history'][-1][1]]  # same as heading
     patch_add(plane_data, 'calc_speed_history', ncalc_speed)
-    alarm, alarm_time, min_radius, packet_time = get_alarm_info(hx, current_lat_long, oldest_lat_long, time_between,
-                                                                plane_data)
+    alarm, alarm_time, min_radius, packet_time = get_alarm_info(hx, current_lat_long, plane_data)
     date_old = current_time_aircraft - packet_time
     if len(plane_data['alarm_history']) == 0 or plane_data['alarm_history'][-1][0] != alarm:
         plane_data['alarm_history'].append([alarm, current_time_aircraft])
@@ -556,15 +551,10 @@ def collect_data(aircraft_json, plane_history):
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]}
 
 
-def dump_json(cwd):
-    if os.path.exists(cwd + "/dump.json"):
-        os.remove(cwd + "/dump.json")
-    json.dump(plane_history, open(cwd + '/dump.json', 'x'), indent=4, sort_keys=True)
-
-
 if __name__ == '__main__':
     start_directory = os.getcwd()
-    if is_relative_dir:
+    # Get the original starting directory so entering dump1090/dump978's directory works ok and doesn't break
+    if is_relative_dir:  # relative directory detection
         CONFIG['dump1090_dir'] = start_directory + CONFIG['dump1090_dir'][1:]
     start()
     plane_history = {}
@@ -580,47 +570,47 @@ if __name__ == '__main__':
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
-    database = mongodb.MongoDBClient(CONFIG['mongo-address'], args.database_out)
+    database = mongodb.MongoDBClient(CONFIG['mongo_address'], args.database_out)
     if not (args.quiet or args.log_mode):
         print_heading()
     total_uploads = 0
-    print()
+    print()  # add an extra buffer line
     tick = 0
+    # We need to store the trip count in a list to ensure that it can be accessed globally due to python shenanigans
     current_day_trip = [0]
     current_day_planes = []
     current_day_alarm_trip = [0]
     current_day_alarm_planes = []
-    current_day = datetime.datetime.now().day
-    most_generous_alt = max([i[1] for i in CONFIG['filters'].values()])
+    current_day = datetime.datetime.now().day # set up the day tracking
+    most_generous_alt = max([i[1] for i in CONFIG['filters'].values()]) # find the biggest filter values
     most_generous_dist = max([i[0] for i in CONFIG['filters'].values()])
-    while tick != CONFIG['run_for']:
-        if current_day != datetime.datetime.now().day:
+    while True:
+        if current_day != datetime.datetime.now().day:  # the day changed! store stats
             database.database['stats'][str(datetime.datetime.now().date() - datetime.timedelta(days=1))].insert_one(
                 {"_id": str(datetime.datetime.now().date() - datetime.timedelta(days=1)),
+                 # we use yesterday because it's tomorrow
                  "unique_planes": len(current_day_planes),
                  'total_trips': current_day_trip[0],
                  'unique_alarm_planes': len(current_day_alarm_planes),
                  'total_alarm_trips': current_day_alarm_trip[0]})
-            current_day_trip = [0]
+            current_day_trip = [0]  # reset counters
             current_day_planes = []
             current_day_alarm_trip = [0]
             current_day_alarm_planes = []
             current_day = datetime.datetime.now().day
-        if end_process:
+        if end_process:  # The dump1090/dump978 has crashed!
             print("Failed! (antenna gone?)")
             sys.exit(1)
-        aircraft_json, new_aircraft_time = load_aircraft_json(current_time_aircraft)
-        current_time_aircraft = new_aircraft_time
-        hexes = collect_data(aircraft_json, plane_history)
-        if args.log_mode:
+        aircraft_json, new_aircraft_time = load_aircraft_json(current_time_aircraft)  # Update json
+        current_time_aircraft = new_aircraft_time  # Sync aircraft time
+        hexes = collect_data(aircraft_json, plane_history) # Update data
+        if args.log_mode:  # Use log mode?
             print_log_mode()
             tick += 1
             continue
-        if args.quiet:
+        if args.quiet:  # Use quiet mode?
             print_quiet()
-        else:
+        else:  # Use default mode.
             delete_last_line(lines=last_printed)  # delete lines from stdout
             last_printed = print_planes(plane_history, hexes)
         tick += 1
-    if not args.no_dump:
-        dump_json(start_directory)
