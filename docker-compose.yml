@@ -1,0 +1,31 @@
+version: '3.10'
+
+services:
+  adsb-app:
+    image: airstrik-aerpaw:latest
+    restart: always
+    build:  
+      context: .
+      network: host
+    privileged: true 
+    volumes: 
+      - /dev/bus/usb:/dev/bus/usb
+    depends_on:
+      - mongodb
+    networks:
+      - outer-world
+      - adsb-network
+  mongodb:
+    image: mongo:latest
+    restart: always
+    ports:
+      - '27017:27017'
+    volumes:
+      - /opt/data/db:/data/db
+    networks:
+      - adsb-network
+networks:
+  adsb-network:
+    driver: bridge
+  outer-world:
+
