@@ -235,7 +235,6 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     distance = time_traveled*speed
     earth_radius_m = 6371000
     angular_distance = distance/earth_radius_m * pi_c
-    print(starting_lat, starting_lon, distance, angular_distance)
     predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
                                 + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
     predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat),
@@ -254,8 +253,6 @@ def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_dat
      as well as when this was updated
     """
 
-    lat_change_sec = (current_lat_long[0] - last_lat_long[0]) / time_between
-    long_change_sec = (current_lat_long[1] - last_lat_long[1]) / time_between
     min_radius = 100000000
     packet_time = max(plane_data['lat_history'][-1][1], plane_data['lon_history'][-1][1])
     alarm_time = -1
@@ -263,11 +260,11 @@ def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_dat
     last_radius = 100000000
     for second in range(CONFIG['think_ahead']):
         if len(plane_data['nav_heading_history']):
-            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0], plane_data['calc_speed_history'][-1][0], second)
-            print("PREDICTED", current_lat_long, second, new_lat, new_long, lat_change_sec * (second + 1) + current_lat_long[0], long_change_sec * (second + 1) + current_lat_long[1], plane_data['nav_heading_history'][-1][0], plane_data['calc_heading_history'][-1][0])
+            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0],
+                                                 plane_data['calc_speed_history'][-1][0], second)
         else:
-            new_lat = lat_change_sec * (second + 1) + current_lat_long[0]
-            new_long = long_change_sec * (second + 1) + current_lat_long[1]
+            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['calc_heading_history'][-1][0],
+                                                 plane_data['calc_speed_history'][-1][0], second)
         if new_lat > 90 or new_lat < -90 or new_long > 90 or new_long < -90:
             break
         new_coords = (new_lat, new_long)
