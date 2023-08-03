@@ -219,6 +219,7 @@ def patch_add(aircraft, val_name, data):
     if data not in aircraft[val_name]:
         aircraft[val_name].append(data)
 
+
 def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     """
     A function to predict lat long based on information given.
@@ -233,11 +234,15 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     starting_lon = starting_lat_long[1] * pi_c
     distance = time_traveled*speed
     earth_radius_m = 6371000
-    angular_distance = distance/earth_radius_m
+    angular_distance = distance/earth_radius_m * pi_c
+    print(starting_lat, starting_lon, distance, angular_distance)
     predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
                                 + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
-    predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat), math.cos(angular_distance) - math.sin(starting_lat) * math.sin(predicted_lat))
-    return (predicted_lat / pi_c, predicted_lon / pi_c)
+    predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat),
+                                              math.cos(angular_distance) - math.sin(starting_lat) * math.sin(predicted_lat))
+    return predicted_lat / pi_c, predicted_lon / pi_c
+
+
 def get_alarm_info(hex, current_lat_long, last_lat_long, time_between, plane_data):
     """
     Calculate the alarm information by simulating the plane given in plane_data
