@@ -547,6 +547,9 @@ def collect_data(aircraft_json, plane_history):
             if item in aircraft.keys():
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
                     plane_data[item + '_history'].append((float(aircraft[item]), current_time_aircraft))
+                    if item == 'nav_heading':
+                        if abs(plane_data['nav_heading_history'][-2][0]-plane_data['nav_heading_history'][-1][0]) > 20:
+                            print("RAPID NAV HEADING CHANGE", plane_data['nav_heading_history'][-2][0], plane_data['nav_heading_history'][-1][0], aircraft['hex'])
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 2:  # If we have at least two
             # values for the lat/long for this plane, we can calculate heading, speed, alarm, and time_until_entry
             calculate_heading_speed_alarm(plane_data, aircraft['hex'])
