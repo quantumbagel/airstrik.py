@@ -158,7 +158,8 @@ def calculate_heading_directions(prev, curr):
     x = (math.cos(first_lat) * math.sin(second_lat)) - (
             math.sin(first_lat) * math.cos(second_lat) * math.cos(second_lon - first_lon))
     heading_rads = math.atan2(y, x)
-    return ((heading_rads * 180 / math.pi) + 360) % 360
+    heading_rads = ((heading_rads * 180 / math.pi) + 360) % 360
+    return heading_rads
 
 
 def print_log_mode():
@@ -372,6 +373,9 @@ def calculate_heading_speed_alarm(plane_data, hx):
     time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][old_index][1]
     # Heading
     heading_xz = calculate_heading_directions(oldest_lat_long, current_lat_long)
+    if len(plane_data['nav_heading_history']) and abs(heading_xz-plane_data['nav_heading_history'][-1][0]) > 40:
+        print("calculated flawed pair")
+        print("Data: (old-lat-long, curr-lat-long, nav, calc)", oldest_lat_long, current_lat_long, plane_data['nav_heading_history'][-1][0], heading_xz)
     # Calculated time/value pair
     ncalc_heading = [heading_xz, plane_data['lat_history'][-1][1]]
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
