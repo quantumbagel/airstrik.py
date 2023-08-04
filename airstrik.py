@@ -375,7 +375,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
     heading_xz = calculate_heading_directions(oldest_lat_long, current_lat_long)
     if len(plane_data['nav_heading_history']) and abs(heading_xz-plane_data['nav_heading_history'][-1][0]) > 40:
         print("calculated flawed pair")
-        print("Data: (old-lat-long, curr-lat-long, nav, calc)", oldest_lat_long, current_lat_long, plane_data['nav_heading_history'][-1][0], heading_xz)
+        print("Data: (old-lat-long, curr-lat-long, nav, calc)", oldest_lat_long, current_lat_long, plane_data['nav_heading_history'][-1][0], heading_xz, hx)
     # Calculated time/value pair
     ncalc_heading = [heading_xz, plane_data['lat_history'][-1][1]]
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
