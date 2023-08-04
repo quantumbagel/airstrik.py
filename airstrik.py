@@ -254,7 +254,10 @@ def get_alarm_info(hex, current_lat_long, plane_data):
     alarm_ll = False
     last_radius = 100000000
     for second in range(CONFIG['think_ahead']):
-        if len(plane_data['nav_heading_history']):
+        if len(plane_data['nav_heading_history']) and not (plane_data['nav_heading_history'][-1][0] == 0.0
+                                                           # check if dump1090 is sending phantom 0.0
+                                                           and abs(plane_data['calc_heading_history'][-1][0]
+                                                                   - plane_data['nav_heading_history'][-1][0]) > 10):
             new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0],
                                                  plane_data['calc_speed_history'][-1][0], second)
         else:
