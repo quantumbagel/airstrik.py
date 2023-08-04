@@ -370,9 +370,9 @@ def calculate_heading_speed_alarm(plane_data, hx):
     # Distance between the oldest relevant value and current position
     dist_xz = geopy.distance.geodesic(current_lat_long, oldest_lat_long).m
     # Time between these values
-    time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][old_index][1]
+    time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][-2][1]  # replace with old_index
     # Heading
-    heading_xz = calculate_heading_directions(oldest_lat_long, current_lat_long)
+    heading_xz = calculate_heading_directions((plane_data['lat_history'][-2][0], plane_data['lon_history'][-2][0]), current_lat_long)
     if len(plane_data['nav_heading_history']) and abs(heading_xz-plane_data['nav_heading_history'][-1][0]) > 40:
         print("calculated flawed pair")
         print("Data: (old-lat-long, curr-lat-long, nav, calc)", oldest_lat_long, current_lat_long, plane_data['nav_heading_history'][-1][0], heading_xz, hx)
