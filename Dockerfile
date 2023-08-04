@@ -11,4 +11,4 @@ RUN python3 -m pip install -r requirements.txt
 RUN git clone https://github.com/flightaware/dump1090.git
 RUN cd dump1090 && make RTLSDR=yes
 RUN cd ..
-CMD python3 airstrik_mongo.py --log-mode -d 0 --database-out airstrik-py
+CMD python3 airstrik.py --log-mode -d 0 --database-out airstrik-py

@@ -9,7 +9,7 @@ import sys
 import os
 
 parser = argparse.ArgumentParser(prog='csvdump.py',
-                                 description='A program to visualize the planes collected by airstrik_mongo.py',
+                                 description='A program to visualize the planes collected by airstrik.py',
                                  epilog='Go Pack!')
 parser.add_argument('-d', '--database', help='which database in the mongodb to pull from', required=False)
 parser.add_argument('-u', '--uri', default='mongodb://localhost:27017', help='The URI to connect to (mongodb)')

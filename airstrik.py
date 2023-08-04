@@ -55,8 +55,6 @@ def is_not_empty(d):
     return False
 
 
-
-
 def run_dump978():
     """
     Run dump978 as a daemon subprocess
@@ -72,6 +70,7 @@ def run_dump978():
     if p.returncode:
         print(stderr)
         end_process = True
+
 
 def run_dump1090():
     """
@@ -124,14 +123,14 @@ def start():
     print()
 
 
-def print_the_plane(plane, hex):  # move to Plane?
+def print_the_plane(plane, hex_value):  # move to Plane?
     """
     Print one plane's datd
     :param plane: The plane's data
-    :param hex: The hex value of the aircraft
+    :param hex_value: The hex value of the aircraft
     :return: nothing
     """
-    print(hex + ": ", end='')
+    print(hex_value + ": ", end='')
     for item in plane:
         if item == 'extras':
             continue
