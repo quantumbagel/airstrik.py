@@ -330,7 +330,10 @@ def raise_alarm(hx, plane_data):
     :param plane_data: The data of the plane triggering the alarm
     :return: nothing
     """
-    print("The alarm has been set off by plane", plane_data['flight_name_id'][0][0], hx)
+    if len(plane_data['flight_name_id']):
+        print("The alarm has been set off by plane", plane_data['flight_name_id'][0][0], hx)
+    else:
+        print("The alarm has been set off by plane", hx, "(no flight id yet)")
 
 
 def get_current_lat_long(plane_data):
