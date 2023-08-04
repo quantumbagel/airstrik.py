@@ -255,14 +255,11 @@ def get_alarm_info(hex, current_lat_long, plane_data):
     alarm_ll = False
     last_radius = 100000000
     for second in range(CONFIG['think_ahead']):
-        if len(plane_data['nav_heading_history']) and not (plane_data['nav_heading_history'][-1][0] == 0.0
-                                                           # check if dump1090 is sending phantom 0.0
-                                                           and abs(plane_data['calc_heading_history'][-1][0]
-                                                                   - plane_data['nav_heading_history'][-1][0]) > 10):
-            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0],
+        if len(plane_data['calc_heading_history']):
+            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['calc_heading_history'][-1][0],
                                                  plane_data['calc_speed_history'][-1][0], second)
         else:
-            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['calc_heading_history'][-1][0],
+            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0],
                                                  plane_data['calc_speed_history'][-1][0], second)
         if new_lat > 90 or new_lat < -90 or new_long > 90 or new_long < -90:
             break
@@ -372,10 +369,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
     # Time between these values
     time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][-2][1]  # replace with old_index
     # Heading
-    heading_xz = calculate_heading_directions((plane_data['lat_history'][-2][0], plane_data['lon_history'][-2][0]), current_lat_long)
-    if len(plane_data['nav_heading_history']) and abs(heading_xz-plane_data['nav_heading_history'][-1][0]) > 40:
-        print("calculated flawed pair")
-        print("Data: (old-lat-long, curr-lat-long, nav, calc)", oldest_lat_long, current_lat_long, plane_data['nav_heading_history'][-1][0], heading_xz, hx)
+    heading_xz = calculate_heading_directions(last_lat_long, current_lat_long)
     # Calculated time/value pair
     ncalc_heading = [heading_xz, plane_data['lat_history'][-1][1]]
     patch_add(plane_data, 'calc_heading_history', ncalc_heading)
