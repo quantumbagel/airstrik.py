@@ -196,7 +196,7 @@ def load_aircraft_json(current_time_aircraft):
         if args.run_dump_978:
             aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrikdata/aircraft.json'))
         elif args.no_start_dump:
-            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump+ '/aircraft.json'))
+            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump + '/aircraft.json'))
         else:
             aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
         new_current_time_aircraft = float(aircraft_json['now'])
@@ -474,6 +474,8 @@ def collect_data(aircraft_json, plane_history):
                 write = {}
                 for item in plane_history[aircraft['hex']].keys():
                     if item == 'extras':
+                        continue
+                    if item in ['nav_heading_history', 'alt_geom_history'] and args.run_dump_978: # not supported:
                         continue
                     dw = False
                     for kval in plane_history[aircraft['hex']][item][::-1]:

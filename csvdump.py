@@ -61,7 +61,7 @@ if args.stats:
 else:
     fieldnames = ['name', 'flight_id', 'start_time', 'end_time', 'lat', 'lon', 'nav_heading', 'alt_geom',
                   'calc_heading',
-                  'calc_speed', 'time_until_entry', 'distance', 'trip', 'filters']
+                  'calc_speed', 'distance', 'trip', 'filters']
     with open(args.out, 'x', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
