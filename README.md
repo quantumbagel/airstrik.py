@@ -1,7 +1,14 @@
-# Installation Guide
+# airstrik.py
 
-<p>Here's a guide to installing airstrik.py.</p>
+A simple program to track planes via ADS-B and alert you if the plane enters a predefined area and store the data in MongoDB.
 
+
+### Feature list
+* Uses MongoDB to store plane data
+* Very space-efficient, only storing the data from the plane's closest location.
+* Can run inside Docker Compose
+* Customizable filters
+* Can predict when a airplane will enter the zone set using trigonometry 
 ### Setup
 
 Run `git clone https://github.com/quantumbagel/airstrik.py.git`
@@ -15,13 +22,11 @@ Here's a quick description of the values in `config.yaml`:
 | think_ahead                | How much time (in seconds) to simulate the aircraft's position ahead of where it is for the early warning system. (default=120)                                                                    |
 | lat_lon_packet_age_max     | To prevent erratic values, airstrik uses an average from an older lat/long packet and current one. This is the maximum packet age. (default=10)                                                    |
 | home                       | This stores your current lat/long to calculate various things. !!!This must be extremely accurate!!! (default=35.77031, -78.68078)                                                                 |              
-| radius                     | The protection radius in km (you don't want to have planes within x kilometers) (default=20)                                                                                                       |
-| min_alt                    | The minimum altitude an aircraft can be to not trigger an alarm in meters. (default=3000)                                                                                                          |
 | remember                   | The maximum amount of time in seconds that an aircraft is kept around before deleting from RAM and saving to mongodb (default=45)                                                                  |
-| dump1090_dir               | This should be kept at its current value if you use the installer. If you do not, set this to the directory of Flightaware's dump1090  (or Mutability's dump978)                                                             |
+| dump1090_dir               | This should be kept at its current value if you use the installer. If you do not, set this to the directory of Flightaware's dump1090  (or Mutability's dump978)                                   |
 | json_speed                 | How much time (seconds) that dump1090 waits before getting updates. (default=0)                                                                                                                    |
 | min_trip_length            | The minimum amount of time (seconds) we must receive packets from an aircraft for us to save it to mongodb. (we don't want a plane sending us one packet to be saved to the database) (default=90) |
-| print_top_planes           | Print only this number of the closest planes. -1 is all planes. (default=-1)                                                                                                                                        |
+| print_top_planes           | Print only this number of the closest planes. -1 is all planes. (default=-1)                                                                                                                       |
 | alarm_eta_trigger          | The amount of warning you want for the alarm to be called for a drone to enter your widest filter.|
 |mongo_address| The address of the MongoDB database to connect to|
 |filters| Write filters as a key-value in this format: <name>: [max <distance(km)>, max <alt(m)>]|
@@ -32,16 +37,16 @@ Here's a list of the command line arguments to `airstrik_mongo.py`:
 |--------------|-----------|
 |-q (--quiet)| Set the output mode to quiet, which turns off all non-error output |
 |-c (--config) <FILE>| Set the directory or relative path to the configuration file (default config.yaml)|
-|-d (--device) <DEVICE>| Set the RTLSDR device index or serial number to use if you have multiple receivers. Default is 0|
+|-d (--device) <DEVICE>| Set the RTLSDR device index or serial number to use if you have multiple receivers. Default is index 0|
 |--database-out <DATABASE>| Set the MongoDB database to dump data to (default airstrikdb)|
 |--no-purge| Don't purge old data folders on startup. This is useful when you have multiple receivers and don't want to crash the other instance.|
-|--log-mode|Print in a log mode instead of a auto-refreshing mode. This argument overrides -q/--quiet.|
-|--no-start-dump| Don't start dump1090/dump978 and provide the directory where the data is.|
-|--run-dump-978| Run dump978 insteaad of dump1090. This should be only used for receivers that are 978mhz.|
+|--log-mode|Print in a log mode instead of a auto-refreshing mode. This argument overrides -q/--quiet.                                           |
+|--no-start-dump| Don't start dump1090/dump978 and provide the directory where the data is.                                                      |
+|--run-dump-978| Run dump978 instead of dump1090. This should be only used for receivers that are 978mhz.|
 
 
 ### Installation
-There are two ways to install airstrik.py, Docker Compose and systemd. The
+There are two ways to install airstrik.py, Docker Compose and systemd. Docker Compose is recommended due to the ease of setup and independence from the rest of the system, although both work fine.
 
 ## systemd
 
