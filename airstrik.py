@@ -498,7 +498,7 @@ def collect_data(aircraft_json, plane_history):
                             write.update({item.replace('_history', ''): None})
                 write['extras'] = {'start_time': ac_dt['extras']['start_time']}
                 write['extras'].update({"end_time": aircraft_json['now']})
-                if write['alt_geom'] is not None:
+                if not args.run_dump_978 and (write['alt_geom'] is not None):
                     matched_filters = match_filters(write['distance'][0], write['alt_geom'][0])
                     if not len(matched_filters):
                         del plane_history[aircraft['hex']]
@@ -548,7 +548,7 @@ def collect_data(aircraft_json, plane_history):
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
                     plane_data[item + '_history'].append((float(aircraft[item]), current_time_aircraft))
                     if item == 'nav_heading' and len(plane_data['nav_heading_history']) >= 2:
-                        print("NAV HEADING CHANGE", plane_data['nav_heading_history'][-2][0], plane_data['nav_heading_history'][-1][0], aircraft['hex'])
+                        print("NAV HEADING CHANGE", plane_data['nav_heading_history'][-2][0], plane_data['nav_heading_history'][-1][0], abs(plane_data['nav_heading_history'][-2][0]-plane_data['nav_heading_history'][-1][0]), aircraft['hex'])
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 2:  # If we have at least two
             # values for the lat/long for this plane, we can calculate heading, speed, alarm, and time_until_entry
             calculate_heading_speed_alarm(plane_data, aircraft['hex'])
