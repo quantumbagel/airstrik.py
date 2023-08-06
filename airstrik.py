@@ -516,6 +516,7 @@ def collect_data(aircraft_json, plane_history):
                     current_day_alarm_planes.append(aircraft['hex'])
                 current_day_alarm_trip[0] += 1
                 current_day_trip[0] += 1
+                print(plane_history)
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
