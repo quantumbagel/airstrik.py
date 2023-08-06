@@ -516,15 +516,6 @@ def collect_data(aircraft_json, plane_history):
                     current_day_alarm_planes.append(aircraft['hex'])
                 current_day_alarm_trip[0] += 1
                 current_day_trip[0] += 1
-                ind = 1
-                while True:
-                    try:
-                        with open(aircraft['hex']+str(ind)+'.json', 'x') as f:
-                            json.dump(plane_history[aircraft['hex']], f)
-                        break
-                    except FileExistsError:
-                        ind += 1
-                print("dUmPeD")
                 database.database[aircraft['hex']].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
