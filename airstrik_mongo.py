@@ -403,8 +403,6 @@ def collect_data(aircraft_json, plane_history):
                     plane_history[aircraft['hex']]['extras']['start_time'] < CONFIG['min_trip_length']:
                 del plane_history[aircraft['hex']]
                 continue
-            st = datetime.datetime.fromtimestamp(ac_dt['extras']['start_time'])
-            et = datetime.datetime.fromtimestamp(aircraft_json['now']-aircraft['seen'])
             if plane_history[aircraft['hex']]['extras']['alarm_triggered']:
                 if aircraft['hex'] not in current_day_planes:
                     current_day_planes.append(aircraft['hex'])
