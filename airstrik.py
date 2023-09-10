@@ -602,7 +602,8 @@ if __name__ == '__main__':
     if not (args.quiet or args.log_mode):
         print_heading()
     total_uploads = 0
-    producer = KafkaProducer(bootstrap_servers=[CONFIG['kafka_address']])
+    if CONFIG['kafka_address']:
+        producer = KafkaProducer(bootstrap_servers=[CONFIG['kafka_address']])
     print()  # add an extra buffer line
     tick = 0
     # We need to store the trip count in a list to ensure that it can be accessed globally due to python shenanigans
