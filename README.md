@@ -1,6 +1,6 @@
 # airstrik.py
 
-A simple program to track planes via ADS-B and alert you if the plane enters a predefined area and store the data in MongoDB.
+A simple program to track planes via ADS-B and alert you if the plane enters a predefined area, and store the data in MongoDB, and even send alerts to a Kakfa server.
 
 
 ### Feature list
@@ -30,7 +30,7 @@ Here's a quick description of the values in `config.yaml`:
 | alarm_eta_trigger      | The amount of warning you want for the alarm to be called for a drone to enter your widest filter.                                                                                                 |
 | mongo_address          | The address of the MongoDB database to connect to                                                                                                                                                  |
 | filters                | Write filters as a key-value in this format: <name>: [max <distance(km)>, max <alt(m)>]                                                                                                            |
-
+| kafka_address          | The address of the Kafka server to send events to. Leave this empty to print events to console.                                                                                                    |
 Here's a list of the command line arguments to `airstrik.py`:
 
 | Item                      | Description                                                                                                                          |

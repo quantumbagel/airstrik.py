@@ -11,6 +11,7 @@ import atexit
 import argparse
 import ruamel.yaml
 import mongodb
+from kafka import KafkaProducer
 
 parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple program to track and detect airplanes '
                                                                  'heading towards the AERPAW field.', epilog='Go Pack!')
@@ -276,7 +277,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
                 break
             last_radius = dist_to_home
     if -1 < alarm_time < CONFIG['alarm_eta_trigger']:
-        raise_alarm(hex, plane_data)
+        raise_alarm(hex, plane_data, alarm_time)
     if len(plane_data['alt_geom_history']):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= most_generous_alt
     else:
@@ -323,17 +324,43 @@ def print_planes(plane_history, hexes):
     return lp
 
 
-def raise_alarm(hx, plane_data):
+def raise_alarm(hx, plane_data, eta):
     """
     Raise the alarm!
     :param hx: the hex of the plane
     :param plane_data: The data of the plane triggering the alarm
+    :param eta: the ETA of the plane
     :return: nothing
     """
-    if len(plane_data['flight_name_id']):
-        print("The alarm has been set off by plane", plane_data['flight_name_id'][0][0], hx)
+    if not len(plane_data['alt_geom_history']):
+        alt_geom = 'unknown'
     else:
-        print("The alarm has been set off by plane", hx, "(no flight id yet)")
+        alt_geom = plane_data['alt_geom_history'][-1][0]
+    if eta > 0:
+        to_send = bytes(f"Plane {hx} ({plane_data['flight_name_id'][0][0]}),"
+                         f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
+                         f" Heading {plane_data['calc_heading_history'][-1][0]},"
+                         f" Speed {plane_data['calc_speed_history'][-1][0]},"
+                         f" ETA {eta//60} minutes {eta-(eta//60 * 60)} seconds,"
+                         f" Altitude {alt_geom},"
+                         f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
+                        "utf-8")
+        if CONFIG['kafka_address']:
+            producer.send('ADSB-Warning', to_send)
+        else:
+            print(str(to_send))
+    else:
+        to_send = bytes(f"Plane {hx} ({plane_data['flight_name_id'][0][0]}),"
+                       f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
+                       f" Heading {plane_data['calc_heading_history'][-1][0]},"
+                       f" Speed {plane_data['calc_speed_history'][-1][0]},"
+                       f" Altitude {alt_geom},"
+                       f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
+                       "utf-8")
+        if CONFIG['kafka_address']:
+            producer.send("ADSB-Alert", to_send)
+        else:
+            print(str(to_send))
 
 
 def get_current_lat_long(plane_data):
@@ -376,13 +403,9 @@ def calculate_heading_speed_alarm(plane_data, hx):
     ncalc_speed = [round(dist_xz / time_between * 3.6, 4), plane_data['lat_history'][-1][1]]  # same as heading
     patch_add(plane_data, 'calc_speed_history', ncalc_speed)
     alarm, alarm_time, min_radius, packet_time = get_alarm_info(hx, current_lat_long, plane_data)
-    date_old = current_time_aircraft - packet_time
     if len(plane_data['alarm_history']) == 0 or plane_data['alarm_history'][-1][0] != alarm:
         plane_data['alarm_history'].append([alarm, current_time_aircraft])
-    if alarm_time == -1:
-        inp = 'NO'
-    else:
-        inp = alarm_time - date_old
+
 
 
 def match_filters(closest_dist, closest_alt=None):
@@ -547,8 +570,6 @@ def collect_data(aircraft_json, plane_history):
             if item in aircraft.keys():
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
                     plane_data[item + '_history'].append((float(aircraft[item]), current_time_aircraft))
-                    if item == 'nav_heading' and len(plane_data['nav_heading_history']) >= 2:
-                        print("NAV HEADING CHANGE", plane_data['nav_heading_history'][-2][0], plane_data['nav_heading_history'][-1][0], abs(plane_data['nav_heading_history'][-2][0]-plane_data['nav_heading_history'][-1][0]), aircraft['hex'])
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 2:  # If we have at least two
             # values for the lat/long for this plane, we can calculate heading, speed, alarm, and time_until_entry
             calculate_heading_speed_alarm(plane_data, aircraft['hex'])
@@ -581,6 +602,7 @@ if __name__ == '__main__':
     if not (args.quiet or args.log_mode):
         print_heading()
     total_uploads = 0
+    producer = KafkaProducer(bootstrap_servers=[CONFIG['kafka_address']])
     print()  # add an extra buffer line
     tick = 0
     # We need to store the trip count in a list to ensure that it can be accessed globally due to python shenanigans
