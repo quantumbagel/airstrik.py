@@ -8,7 +8,6 @@ dump1090_dir: './dump1090' # the storage location of https://github.com/flightaw
 json_speed: 0  # time between updates
 min_trip_length: 90 # the minimum time a plane must be seen to be saved to mongod (sec)
 print_top_planes: 25 # the number of closest planes to print in normal mode
-alarm_eta_trigger: 30
 mongo_address: "127.0.0.1:27017"
 kafka_address: "" # The address for the KAFKA server
 filters:

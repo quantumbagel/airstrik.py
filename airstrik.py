@@ -276,7 +276,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
             if dist_to_home > last_radius:
                 break
             last_radius = dist_to_home
-    if -1 < alarm_time < CONFIG['alarm_eta_trigger']:
+    if -1 < alarm_time < CONFIG['think_ahead']:
         raise_alarm(hex, plane_data, alarm_time)
     if len(plane_data['alt_geom_history']):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= most_generous_alt
