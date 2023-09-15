@@ -336,8 +336,12 @@ def raise_alarm(hx, plane_data, eta):
         alt_geom = 'unknown'
     else:
         alt_geom = plane_data['alt_geom_history'][-1][0]
+    if not len(plane_data['flight_name_id']):
+        flight_id = 'unknown id'
+    else:
+        flight_id = len(plane_data['flight_name_id'][0][0])
     if eta > 0:
-        to_send = bytes(f"Plane {hx} ({plane_data['flight_name_id'][0][0]}),"
+        to_send = bytes(f"Plane {hx} ({flight_id}),"
                          f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
                          f" Heading {plane_data['calc_heading_history'][-1][0]},"
                          f" Speed {plane_data['calc_speed_history'][-1][0]},"
@@ -350,7 +354,7 @@ def raise_alarm(hx, plane_data, eta):
         else:
             print(str(to_send))
     else:
-        to_send = bytes(f"Plane {hx} ({plane_data['flight_name_id'][0][0]}),"
+        to_send = bytes(f"Plane {hx} ({flight_id}),"
                        f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
                        f" Heading {plane_data['calc_heading_history'][-1][0]},"
                        f" Speed {plane_data['calc_speed_history'][-1][0]},"
@@ -360,7 +364,7 @@ def raise_alarm(hx, plane_data, eta):
         if CONFIG['kafka_address']:
             producer.send("ADSB-Alert", to_send)
         else:
-            print(str(to_send))
+            print(to_send.decode('utf-8'))
 
 
 def get_current_lat_long(plane_data):
