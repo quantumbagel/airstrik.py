@@ -340,7 +340,7 @@ def raise_alarm(hx, plane_data, eta):
     if not len(plane_data['flight_name_id']):
         flight_id = 'unknown id'
     else:
-        flight_id = len(plane_data['flight_name_id'][0][0])
+        flight_id = plane_data['flight_name_id'][0][0]
     if eta > 0:
         to_send = bytes(f"Plane {hx} ({flight_id}),"
                         f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
