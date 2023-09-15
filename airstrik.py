@@ -169,7 +169,6 @@ def print_log_mode():
     :return: none
     """
     print("We have seen", total_uploads, 'plane trips.')
-    print("We are on loop", tick)
     plns = 0
     for data_plane in plane_history.values():
         try:
@@ -473,10 +472,6 @@ def print_quiet():
             continue
         except ValueError:
             continue
-    if CONFIG['run_for'] == -1:
-        print("Running indefinitely. On tick", tick)
-    else:
-        print(str(tick + 1) + "/" + str(CONFIG['run_for']))
     print("We have seen", total_uploads, 'plane trips.')
     print("Currently parsing", plns, "planes.")
 
@@ -617,7 +612,6 @@ if __name__ == '__main__':
         producer = KafkaProducer(value_serializer=lambda v: json.dumps(v).encode('utf-8'),
                                  bootstrap_servers=[CONFIG['kafka_address']])
     print()  # add an extra buffer line
-    tick = 0
     # We need to store the trip count in a list to ensure that it can be accessed globally due to python shenanigans
     current_day_trip = [0]
     current_day_planes = []
@@ -648,11 +642,9 @@ if __name__ == '__main__':
         hexes = collect_data(aircraft_json, plane_history)  # Update data
         if args.log_mode:  # Use log mode?
             print_log_mode()
-            tick += 1
             continue
         if args.quiet:  # Use quiet mode?
             print_quiet()
         else:  # Use default mode.
             delete_last_line(lines=last_printed)  # delete lines from stdout
             last_printed = print_planes(plane_history, hexes)
-        tick += 1
