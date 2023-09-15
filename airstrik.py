@@ -337,11 +337,12 @@ def raise_alarm(hx, plane_data, eta):
     else:
         alt_geom = plane_data['alt_geom_history'][-1][0]
     if not len(plane_data['flight_name_id']):
-        flight_id = 'unknown id'
+        flight_id = ''
     else:
         flight_id = plane_data['flight_name_id'][0][0]
     if eta > 0:
-        to_send = {'plane': [hx, flight_id],
+        to_send = {'plane_hex': hx,
+                   'plane_id': flight_id,
                    "plane_time": datetime.datetime.fromtimestamp(current_time_aircraft),
                    "heading": plane_data['calc_heading_history'][-1][0],
                    "speed": plane_data['calc_speed_history'][-1][0],
@@ -351,14 +352,15 @@ def raise_alarm(hx, plane_data, eta):
                    "distance": plane_data,
                    'eta': eta}
         if CONFIG['kafka_address']:
-            producer.send('ADSB-Warning', to_send)
+            producer.send('airstrik-warning', to_send)
         else:
-            print("ADSB-Warning: ", end='')
+            print("airstrik-warning: ", end='')
             for item in to_send.keys():
                 print(f"{item}: {to_send[item]}, ", end='')
             print()
     else:
-        to_send = {'plane': [hx, flight_id],
+        to_send = {'plane_hex': hx,
+                   'plane_id': flight_id,
                    "plane_time": datetime.datetime.fromtimestamp(current_time_aircraft),
                    "heading": plane_data['calc_heading_history'][-1][0],
                    "speed": plane_data['calc_speed_history'][-1][0],
@@ -367,12 +369,13 @@ def raise_alarm(hx, plane_data, eta):
                    'longitude': plane_data['lon_history'][-1][0],
                    "distance": plane_data}
         if CONFIG['kafka_address']:
-            producer.send("ADSB-Alert", to_send)
+            producer.send("airstrik-alert", to_send)
         else:
-            print("ADSB-Alert: ", end='')
+            print("airstrik-alert: ", end='')
             for item in to_send.keys():
                 print(f"{item}: {to_send[item]}, ", end='')
             print()
+
 
 def get_current_lat_long(plane_data):
     """

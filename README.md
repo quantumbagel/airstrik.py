@@ -45,6 +45,31 @@ Here's a list of the command line arguments to `airstrik.py`:
 | --run-dump-978            | Run dump978 instead of dump1090. This should be only used for receivers that are 978mhz.                                             |
 
 
+### Kafka
+
+The Kafka implementation is designed to help alert other programs, such as drone flight managers, when the airplanes have entered an area where they may become or are a problem.
+If the `kafka_address` argument is set in `config.yaml`, the program will update two topics to that Kafka server: `airstrik-alert` and `airstrik-warning`. 
+`airstrik-alert` is only triggered when the plane is inside the widest filter, but the `airstrik-warning` is sent when the plane is within `think_ahead` seconds of entering the zone.
+Here are the paramaters sent.
+
+| Key        | Value                                                                                                                                  |
+|------------|----------------------------------------------------------------------------------------------------------------------------------------|
+| plane_hex  | The hex address of the plane.                                                                                                          |
+| plane_id   | The flight identification tag of the plane. This will be an empty string if the airplane has not sent its tag.                         |
+| plane_time | The epoch time on the plane packet. This should be the current epoch time, but if differs can be used to calculate the ETA epoch time. |
+| heading    | The heading of the plane.                                                                                                              |
+| speed      | The speed (km/h) that the plane is going.                                                                                              |
+| altitude   | The altitude (m) from sea level of the plane.                                                                                          |
+| latitude   | The latitude of the plane.                                                                                                             |                        
+| longitude  | The longitude of the plane.                                                                                                            |
+| distance   | The distance of the plane from set origin point (m)                                                                                    |
+| eta        | How many seconds until the plane enters the widest filter. (airstrik-warning only)                                                     |
+
+
+
+
+
+
 ### Installation
 There are two ways to install airstrik.py, Docker Compose and systemd. Docker Compose is recommended due to the ease of setup and independence from the rest of the system, although both work fine.
 
