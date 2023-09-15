@@ -342,31 +342,38 @@ def raise_alarm(hx, plane_data, eta):
     else:
         flight_id = plane_data['flight_name_id'][0][0]
     if eta > 0:
-        to_send = bytes(f"Plane {hx} ({flight_id}),"
-                        f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
-                        f" Heading {plane_data['calc_heading_history'][-1][0]},"
-                        f" Speed {plane_data['calc_speed_history'][-1][0]},"
-                        f" ETA {eta // 60} minutes {eta - (eta // 60 * 60)} seconds,"
-                        f" Altitude {alt_geom},"
-                        f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
-                        "utf-8")
+        to_send = {'plane': [hx, flight_id],
+                   "plane_time": datetime.datetime.fromtimestamp(current_time_aircraft),
+                   "heading": plane_data['calc_heading_history'][-1][0],
+                   "speed": plane_data['calc_speed_history'][-1][0],
+                   "altitude": alt_geom,
+                   "latitude": plane_data['lat_history'][-1][0],
+                   'longitude': plane_data['lon_history'][-1][0],
+                   "distance": plane_data,
+                   'eta': eta}
         if CONFIG['kafka_address']:
             producer.send('ADSB-Warning', to_send)
         else:
-            print(str(to_send))
+            print("ADSB-Warning: ", end='')
+            for item in to_send.keys():
+                print(f"{item}: {to_send[item]}, ", end='')
+            print()
     else:
-        to_send = bytes(f"Plane {hx} ({flight_id}),"
-                        f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
-                        f" Heading {plane_data['calc_heading_history'][-1][0]},"
-                        f" Speed {plane_data['calc_speed_history'][-1][0]},"
-                        f" Altitude {alt_geom},"
-                        f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
-                        "utf-8")
+        to_send = {'plane': [hx, flight_id],
+                   "plane_time": datetime.datetime.fromtimestamp(current_time_aircraft),
+                   "heading": plane_data['calc_heading_history'][-1][0],
+                   "speed": plane_data['calc_speed_history'][-1][0],
+                   "altitude": alt_geom,
+                   "latitude": plane_data['lat_history'][-1][0],
+                   'longitude': plane_data['lon_history'][-1][0],
+                   "distance": plane_data}
         if CONFIG['kafka_address']:
             producer.send("ADSB-Alert", to_send)
         else:
-            print(to_send.decode('utf-8'))
-
+            print("ADSB-Alert: ", end='')
+            for item in to_send.keys():
+                print(f"{item}: {to_send[item]}, ", end='')
+            print()
 
 def get_current_lat_long(plane_data):
     """
@@ -607,7 +614,8 @@ if __name__ == '__main__':
         print_heading()
     total_uploads = 0
     if CONFIG['kafka_address']:
-        producer = KafkaProducer(bootstrap_servers=[CONFIG['kafka_address']])
+        producer = KafkaProducer(value_serializer=lambda v: json.dumps(v).encode('utf-8'),
+                                 bootstrap_servers=[CONFIG['kafka_address']])
     print()  # add an extra buffer line
     tick = 0
     # We need to store the trip count in a list to ensure that it can be accessed globally due to python shenanigans
