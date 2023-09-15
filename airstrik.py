@@ -111,9 +111,9 @@ def start():
     if args.no_start_dump:
         airstrikdir = CONFIG['dump1090_dir'] + '/' + args.no_start_dump
     else:
-        airstrikdir = CONFIG['dump1090_dir'] + '/airstrik_data' + time_start+'/'
+        airstrikdir = CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/'
     if args.run_dump_978:
-        airstrikdir = CONFIG['dump1090_dir']+'/airstrikdata'
+        airstrikdir = CONFIG['dump1090_dir'] + '/airstrikdata'
     while 'aircraft.json' not in os.listdir(airstrikdir):
         if end_process:
             print("Failed! (antenna not plugged in?)")
@@ -137,7 +137,7 @@ def print_the_plane(plane, hex_value):  # move to Plane?
             continue
         try:
             print(str(plane[item][-1][0]) + (len(item) - len(str(plane[item][-1][0])) + 1) * ' ', end=' ')
-        except Exception as e:
+        except Exception:
             print('NO' + (len(item)) * ' ', end='')
     print()
 
@@ -196,15 +196,15 @@ def load_aircraft_json(current_time_aircraft):
             print("Failed! (likely antenna is unplugged)")
             sys.exit(1)
         if args.run_dump_978:
-            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrikdata/aircraft.json'))
+            a_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrikdata/aircraft.json'))
         elif args.no_start_dump:
-            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump + '/aircraft.json'))
+            a_json = json.load(open(CONFIG['dump1090_dir'] + '/' + args.no_start_dump + '/aircraft.json'))
         else:
-            aircraft_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
-        new_current_time_aircraft = float(aircraft_json['now'])
+            a_json = json.load(open(CONFIG['dump1090_dir'] + '/airstrik_data' + time_start + '/aircraft.json'))
+        new_current_time_aircraft = float(a_json['now'])
         if new_current_time_aircraft != current_time_aircraft:
             break
-    return aircraft_json, new_current_time_aircraft
+    return a_json, new_current_time_aircraft
 
 
 def patch_add(aircraft, val_name, data):
@@ -231,13 +231,14 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     pi_c = math.pi / 180
     starting_lat = starting_lat_long[0] * pi_c
     starting_lon = starting_lat_long[1] * pi_c
-    distance = time_traveled*speed
+    distance = time_traveled * speed
     earth_radius_m = 6371000
-    angular_distance = distance/earth_radius_m * pi_c
+    angular_distance = distance / earth_radius_m * pi_c
     predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
-                                + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
+                              + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
     predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat),
-                                              math.cos(angular_distance) - math.sin(starting_lat) * math.sin(predicted_lat))
+                                              math.cos(angular_distance) - math.sin(starting_lat) * math.sin(
+                                                  predicted_lat))
     return predicted_lat / pi_c, predicted_lon / pi_c
 
 
@@ -342,12 +343,12 @@ def raise_alarm(hx, plane_data, eta):
         flight_id = len(plane_data['flight_name_id'][0][0])
     if eta > 0:
         to_send = bytes(f"Plane {hx} ({flight_id}),"
-                         f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
-                         f" Heading {plane_data['calc_heading_history'][-1][0]},"
-                         f" Speed {plane_data['calc_speed_history'][-1][0]},"
-                         f" ETA {eta//60} minutes {eta-(eta//60 * 60)} seconds,"
-                         f" Altitude {alt_geom},"
-                         f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
+                        f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
+                        f" Heading {plane_data['calc_heading_history'][-1][0]},"
+                        f" Speed {plane_data['calc_speed_history'][-1][0]},"
+                        f" ETA {eta // 60} minutes {eta - (eta // 60 * 60)} seconds,"
+                        f" Altitude {alt_geom},"
+                        f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
                         "utf-8")
         if CONFIG['kafka_address']:
             producer.send('ADSB-Warning', to_send)
@@ -355,12 +356,12 @@ def raise_alarm(hx, plane_data, eta):
             print(str(to_send))
     else:
         to_send = bytes(f"Plane {hx} ({flight_id}),"
-                       f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
-                       f" Heading {plane_data['calc_heading_history'][-1][0]},"
-                       f" Speed {plane_data['calc_speed_history'][-1][0]},"
-                       f" Altitude {alt_geom},"
-                       f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
-                       "utf-8")
+                        f" Plane Time {str(datetime.datetime.fromtimestamp(current_time_aircraft))}"
+                        f" Heading {plane_data['calc_heading_history'][-1][0]},"
+                        f" Speed {plane_data['calc_speed_history'][-1][0]},"
+                        f" Altitude {alt_geom},"
+                        f" Latitude/Longitude {plane_data['lat_history'][-1][0]}, {plane_data['lon_history'][-1][0]}",
+                        "utf-8")
         if CONFIG['kafka_address']:
             producer.send("ADSB-Alert", to_send)
         else:
@@ -409,7 +410,6 @@ def calculate_heading_speed_alarm(plane_data, hx):
     alarm, alarm_time, min_radius, packet_time = get_alarm_info(hx, current_lat_long, plane_data)
     if len(plane_data['alarm_history']) == 0 or plane_data['alarm_history'][-1][0] != alarm:
         plane_data['alarm_history'].append([alarm, current_time_aircraft])
-
 
 
 def match_filters(closest_dist, closest_alt=None):
@@ -474,21 +474,21 @@ def print_quiet():
     print("Currently parsing", plns, "planes.")
 
 
-def collect_data(aircraft_json, plane_history):
+def collect_data(a_json, plane_history):
     """
     Collect and calculate data for each aircraft and store in plane_history
-    :param aircraft_json: The aircraft data (raw)
+    :param a_json: The aircraft data (raw)
     :param plane_history: Our processed data object to dump to
     :return: nothing
     """
     global total_uploads
-    for aircraft in aircraft_json['aircraft']:
+    for aircraft in a_json['aircraft']:
         if aircraft['seen'] > CONFIG['remember']:  # don't even bother / try to upload?
             try:
                 ac_dt = plane_history[aircraft['hex']]
             except KeyError:
                 continue
-            if (aircraft_json['now']-aircraft['seen']) - \
+            if (a_json['now'] - aircraft['seen']) - \
                     plane_history[aircraft['hex']]['extras']['start_time'] < CONFIG['min_trip_length']:
                 del plane_history[aircraft['hex']]
                 continue
@@ -516,7 +516,7 @@ def collect_data(aircraft_json, plane_history):
                                 flight_predictor_json = json.load(open(start_directory + '/icao.json'))
                                 flight_name = flight_predictor_json[aircraft['hex']]
                                 del flight_predictor_json
-                                write.update({'flight_name_id': [flight_name+' (p)', aircraft_json['now']]})
+                                write.update({'flight_name_id': [flight_name + ' (p)', a_json['now']]})
                                 continue
                             except KeyError:
                                 write.update({'flight_name_id': None})
@@ -524,7 +524,7 @@ def collect_data(aircraft_json, plane_history):
                         else:
                             write.update({item.replace('_history', ''): None})
                 write['extras'] = {'start_time': ac_dt['extras']['start_time']}
-                write['extras'].update({"end_time": aircraft_json['now']})
+                write['extras'].update({"end_time": a_json['now']})
                 if not args.run_dump_978 and (write['alt_geom'] is not None):
                     matched_filters = match_filters(write['distance'][0], write['alt_geom'][0])
                     if not len(matched_filters):
@@ -554,7 +554,7 @@ def collect_data(aircraft_json, plane_history):
         if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):
             # If we haven't seen this plane before, create a new one
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
-                                                    "extras": {"start_time": aircraft_json['now'],
+                                                    "extras": {"start_time": a_json['now'],
                                                                'alarm_triggered': False,
                                                                'end_time': None},
                                                     "lat_history": [],
@@ -568,9 +568,9 @@ def collect_data(aircraft_json, plane_history):
         plane_data = plane_history[aircraft['hex']]  # A reference to plane
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
-                plane_data['flight_name_id'] = [[str(aircraft['flight']).replace(' ', ''), aircraft_json['now']]]
+                plane_data['flight_name_id'] = [[str(aircraft['flight']).replace(' ', ''), a_json['now']]]
                 # So this plays nice with print_the_plane
-        for item in ['lat', 'lon', 'nav_heading', 'alt_geom']:  # Stats in aircraft_json that are retrievable
+        for item in ['lat', 'lon', 'nav_heading', 'alt_geom']:  # Stats in a_json that are retrievable
             if item in aircraft.keys():
                 if not (len(plane_data[item + '_history']) and plane_data[item + '_history'][-1][0] == aircraft[item]):
                     plane_data[item + '_history'].append((float(aircraft[item]), current_time_aircraft))
@@ -580,7 +580,7 @@ def collect_data(aircraft_json, plane_history):
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 1:  # If we have a full lat/long
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
-    return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(aircraft_json['aircraft'])]}
+    return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(a_json['aircraft'])]}
 
 
 if __name__ == '__main__':
@@ -615,8 +615,8 @@ if __name__ == '__main__':
     current_day_planes = []
     current_day_alarm_trip = [0]
     current_day_alarm_planes = []
-    current_day = datetime.datetime.now().day # set up the day tracking
-    most_generous_alt = max([i[1] for i in CONFIG['filters'].values()]) # find the biggest filter values
+    current_day = datetime.datetime.now().day  # set up the day tracking
+    most_generous_alt = max([i[1] for i in CONFIG['filters'].values()])  # find the biggest filter values
     most_generous_dist = max([i[0] for i in CONFIG['filters'].values()])
     while True:
         if current_day != datetime.datetime.now().day:  # the day changed! store stats
@@ -637,7 +637,7 @@ if __name__ == '__main__':
             sys.exit(1)
         aircraft_json, new_aircraft_time = load_aircraft_json(current_time_aircraft)  # Update json
         current_time_aircraft = new_aircraft_time  # Sync aircraft time
-        hexes = collect_data(aircraft_json, plane_history) # Update data
+        hexes = collect_data(aircraft_json, plane_history)  # Update data
         if args.log_mode:  # Use log mode?
             print_log_mode()
             tick += 1
