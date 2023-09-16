@@ -255,6 +255,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
     alarm_time = -1
     alarm_ll = False
     last_radius = 100000000
+    stats = {}
     for second in range(CONFIG['think_ahead']):
         if len(plane_data['calc_heading_history']):
             new_lat, new_long = predict_lat_long(current_lat_long, plane_data['calc_heading_history'][-1][0],
@@ -266,6 +267,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
             break
         new_coords = (new_lat, new_long)
         dist_to_home = geopy.distance.geodesic(new_coords, HOME).km
+        stats.update({second:[dist_to_home, new_coords]})
         alarm_lat_long = dist_to_home < most_generous_dist
         if alarm_lat_long:
             alarm_ll = True
@@ -277,6 +279,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
                 break
             last_radius = dist_to_home
     if -1 < alarm_time < CONFIG['think_ahead']:
+        print(stats)
         raise_alarm(hex, plane_data, alarm_time)
     if len(plane_data['alt_geom_history']):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= most_generous_alt
