@@ -411,7 +411,7 @@ def calculate_heading_speed_alarm(plane_data, hx):
     # Distance between the oldest relevant value and current position
     dist_xz = geopy.distance.geodesic(current_lat_long, oldest_lat_long).m
     # Time between these values
-    time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][-2][1]  # replace with old_index
+    time_between = plane_data['lat_history'][-1][1] - plane_data['lat_history'][old_index][1]  # replace with old_index
     # Heading
     heading_xz = calculate_heading_directions(last_lat_long, current_lat_long)
     # Calculated time/value pair
