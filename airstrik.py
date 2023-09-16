@@ -349,7 +349,7 @@ def raise_alarm(hx, plane_data, eta):
                    "altitude": alt_geom,
                    "latitude": plane_data['lat_history'][-1][0],
                    'longitude': plane_data['lon_history'][-1][0],
-                   "distance": plane_data,
+                   "distance": plane_data['distance_history'][-1][0],
                    'eta': eta}
         if CONFIG['kafka_address']:
             producer.send('airstrik-warning', to_send)
@@ -367,7 +367,7 @@ def raise_alarm(hx, plane_data, eta):
                    "altitude": alt_geom,
                    "latitude": plane_data['lat_history'][-1][0],
                    'longitude': plane_data['lon_history'][-1][0],
-                   "distance": plane_data}
+                   "distance": plane_data['distance_history'][-1][0]}
         if CONFIG['kafka_address']:
             producer.send("airstrik-alert", to_send)
         else:
