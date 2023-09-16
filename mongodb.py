@@ -1,9 +1,6 @@
 import pymongo.errors
 from pymongo.mongo_client import MongoClient
 
-# uri = "mongodb://jjreder:airstrikdb@ac-xe0hbtv-shard-00-00.o9kvdxy.mongodb.net:27017,ac-xe0hbtv-shard-00-01.o9kvdxy.mongodb.net:27017,ac-xe0hbtv-shard-00-02.o9kvdxy.mongodb.net:27017/?ssl=true&replicaSet=atlas-4y1pid-shard-0&authSource=admin&retryWrites=true&w=majority"
-uri = 'mongodb://localhost:27017'
-
 
 class MongoDBClient:
     def __init__(self, uri, db):
