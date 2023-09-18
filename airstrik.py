@@ -12,7 +12,6 @@ import argparse
 import ruamel.yaml
 import mongodb
 from kafka import KafkaProducer
-
 parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple program to track and detect airplanes '
                                                                  'heading towards the AERPAW field.', epilog='Go Pack!')
 parser.add_argument('-q', '--quiet', action='store_true')
@@ -233,13 +232,13 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     distance = time_traveled * 5/18 * speed # 5/18 = conversion from km/h to m/s
     print(f"distance in {time_traveled} secs at {speed} speed = {distance} meters.")
     earth_radius_m = 6371000
-    angular_distance = distance / earth_radius_m * pi_c
+    angular_distance = distance / earth_radius_m
     predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
                               + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
     predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat),
                                               math.cos(angular_distance) - math.sin(starting_lat) * math.sin(
                                                   predicted_lat))
-    print(f"DBG--- calculated distance - {distance} actual - {geopy.distance.geodesic((predicted_lat, predicted_lon), (starting_lat, starting_lon))}")
+    print(f"DBG--- calculated distance - {distance/1000} actual - {geopy.distance.geodesic((predicted_lat, predicted_lon), (starting_lat, starting_lon))}")
     return predicted_lat / pi_c, predicted_lon / pi_c
 
 
@@ -268,11 +267,15 @@ def get_alarm_info(hex, current_lat_long, plane_data):
         did_raise_alarm = True
     for second in range(CONFIG['think_ahead']):
         if len(plane_data['calc_heading_history']):
-            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['calc_heading_history'][-1][0],
-                                                 plane_data['calc_speed_history'][-1][0], second)
+            destination = (geopy.distance.geodesic(kilometers=second*plane_data['calc_speed_history'][-1][0]*8/15)
+                           .destination(current_lat_long, plane_data['calc_heading_history'][-1][0]))
+            new_lat, new_long = destination.latitude, destination.longitude
+        elif len(plane_data['nav_heading_history']):
+            destination = (geopy.distance.geodesic(kilometers=second * plane_data['calc_speed_history'][-1][0] * 8/15)
+                           .destination(current_lat_long, plane_data['nav_heading_history'][-1][0]))
+            new_lat, new_long = destination.latitude, destination.longitude
         else:
-            new_lat, new_long = predict_lat_long(current_lat_long, plane_data['nav_heading_history'][-1][0],
-                                                 plane_data['calc_speed_history'][-1][0], second)
+            return False, -1, 0, 0
         if new_lat > 90 or new_lat < -90 or new_long > 90 or new_long < -90:
             break
         new_coords = (new_lat, new_long)
