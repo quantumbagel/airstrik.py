@@ -259,7 +259,10 @@ def get_alarm_info(hex, current_lat_long, plane_data):
     last_radius = 100000000
     stats = {}
     did_raise_alarm = False
-    if geopy.distance.geodesic(current_lat_long, HOME).km:  # if we are in the zone, don't bother
+    gp_current = geopy.distance.geodesic(current_lat_long, HOME).km
+    matched_filters = match_filters(gp_current)
+    if len(matched_filters.keys()):  # if we are in the zone, don't bother
+        print(f"DEBUG: Matched one or more filters to {gp_current}km away!")
         raise_alarm(hex, plane_data, 0)
         did_raise_alarm = True
     for second in range(CONFIG['think_ahead']):
@@ -286,6 +289,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
             last_radius = dist_to_home
     if not did_raise_alarm:
         if -1 < alarm_time < CONFIG['think_ahead']:
+            print(f"DEBUG: obtained stats. alarm_time={alarm_time}")
             print(stats)
             raise_alarm(hex, plane_data, alarm_time)
     if len(plane_data['alt_geom_history']):

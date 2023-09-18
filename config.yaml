@@ -1,4 +1,5 @@
-think_ahead: 60  # The amount of seconds to simulate a vehicle's path to check if it intersects with the boundaries
+think_ahead:
+  60  # The amount of seconds to simulate a vehicle's path to check if it intersects with the boundaries
 lat_lon_packet_age_max: 10 # The maximum age of a latitude packet used to calculate the speed (This should be fine)
 home: # Home lat/long point
   lat: 35.7270309
