@@ -230,7 +230,7 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     pi_c = math.pi / 180
     starting_lat = starting_lat_long[0] * pi_c
     starting_lon = starting_lat_long[1] * pi_c
-    distance = time_traveled * speed
+    distance = time_traveled * 5/18 * speed # 5/18 = conversion from km/h to m/s
     earth_radius_m = 6371000
     angular_distance = distance / earth_radius_m * pi_c
     predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
@@ -239,6 +239,8 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
                                               math.cos(angular_distance) - math.sin(starting_lat) * math.sin(
                                                   predicted_lat))
     return predicted_lat / pi_c, predicted_lon / pi_c
+
+
 
 
 def get_alarm_info(hex, current_lat_long, plane_data):
@@ -256,6 +258,10 @@ def get_alarm_info(hex, current_lat_long, plane_data):
     alarm_ll = False
     last_radius = 100000000
     stats = {}
+    did_raise_alarm = False
+    if geopy.distance.geodesic(current_lat_long, HOME).km:  # if we are in the zone, don't bother
+        raise_alarm(hex, plane_data, 0)
+        did_raise_alarm = True
     for second in range(CONFIG['think_ahead']):
         if len(plane_data['calc_heading_history']):
             new_lat, new_long = predict_lat_long(current_lat_long, plane_data['calc_heading_history'][-1][0],
@@ -267,7 +273,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
             break
         new_coords = (new_lat, new_long)
         dist_to_home = geopy.distance.geodesic(new_coords, HOME).km
-        stats.update({second:[dist_to_home, new_coords]})
+        stats.update({second: [dist_to_home, new_coords]})
         alarm_lat_long = dist_to_home < most_generous_dist
         if alarm_lat_long:
             alarm_ll = True
@@ -278,9 +284,10 @@ def get_alarm_info(hex, current_lat_long, plane_data):
             if dist_to_home > last_radius:
                 break
             last_radius = dist_to_home
-    if -1 < alarm_time < CONFIG['think_ahead']:
-        print(stats)
-        raise_alarm(hex, plane_data, alarm_time)
+    if not did_raise_alarm:
+        if -1 < alarm_time < CONFIG['think_ahead']:
+            print(stats)
+            raise_alarm(hex, plane_data, alarm_time)
     if len(plane_data['alt_geom_history']):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= most_generous_alt
     else:
