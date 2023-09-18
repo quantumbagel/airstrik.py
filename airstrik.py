@@ -231,6 +231,7 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     starting_lat = starting_lat_long[0] * pi_c
     starting_lon = starting_lat_long[1] * pi_c
     distance = time_traveled * 5/18 * speed # 5/18 = conversion from km/h to m/s
+    print(f"distance in {time_traveled} secs at {speed} speed = {distance} meters.")
     earth_radius_m = 6371000
     angular_distance = distance / earth_radius_m * pi_c
     predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
@@ -238,6 +239,7 @@ def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
     predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat),
                                               math.cos(angular_distance) - math.sin(starting_lat) * math.sin(
                                                   predicted_lat))
+    print(f"DBG--- calculated distance - {distance} actual - {geopy.distance.geodesic((predicted_lat, predicted_lon), (starting_lat, starting_lon))}")
     return predicted_lat / pi_c, predicted_lon / pi_c
 
 
@@ -259,10 +261,9 @@ def get_alarm_info(hex, current_lat_long, plane_data):
     last_radius = 100000000
     stats = {}
     did_raise_alarm = False
-    gp_current = geopy.distance.geodesic(current_lat_long, HOME).km
-    matched_filters = match_filters(gp_current)
+    matched_filters = match_filters(plane_data['distance_history'][-1][0])
     if len(matched_filters.keys()):  # if we are in the zone, don't bother
-        print(f"DEBUG: Matched one or more filters to {gp_current}km away!")
+        print(f"DEBUG: Matched one or more filters to the plane!")
         raise_alarm(hex, plane_data, 0)
         did_raise_alarm = True
     for second in range(CONFIG['think_ahead']):
