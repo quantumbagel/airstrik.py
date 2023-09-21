@@ -10,7 +10,7 @@ import geopy.distance
 import atexit
 import argparse
 import ruamel.yaml
-import mongodb
+from pymongo.mongo_client import MongoClient
 from kafka import KafkaProducer
 parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple program to track and detect airplanes '
                                                                  'heading towards the AERPAW field.', epilog='Go Pack!')
@@ -566,7 +566,8 @@ def collect_data(a_json, plane_history):
                     current_day_alarm_planes.append(aircraft['hex'])
                 current_day_alarm_trip[0] += 1
                 current_day_trip[0] += 1
-                database.database[aircraft['hex']].insert_one(write)
+                write['flight_id'] = aircraft['hex']
+                database["flight_records"].insert_one(write)
             else:
                 if aircraft['hex'] not in current_day_planes:
                     current_day_planes.append(aircraft['hex'])
@@ -625,7 +626,8 @@ if __name__ == '__main__':
     current_time_aircraft = 0  # start the time at 0 to ensure that load_aircraft_json waits for a new packet,
     # instead of accepting a non-existent packet
     last_printed = 1
-    database = mongodb.MongoDBClient(CONFIG['mongo_address'], args.database_out)
+    client = MongoClient(CONFIG['mongo_address'])
+    database = client[args.database_out]
     if not (args.quiet or args.log_mode):
         print_heading()
     total_uploads = 0
@@ -643,7 +645,7 @@ if __name__ == '__main__':
     most_generous_dist = max([i[0] for i in CONFIG['filters'].values()])
     while True:
         if current_day != datetime.datetime.now().day:  # the day changed! store stats
-            database.database['stats'][str(datetime.datetime.now().date() - datetime.timedelta(days=1))].insert_one(
+            database['stats'].insert_one(
                 {"_id": str(datetime.datetime.now().date() - datetime.timedelta(days=1)),
                  # we use yesterday because it's tomorrow
                  "unique_planes": len(current_day_planes),
