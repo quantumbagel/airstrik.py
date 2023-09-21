@@ -269,6 +269,7 @@ def get_alarm_info(hex, current_lat_long, plane_data):
         if len(plane_data['calc_heading_history']):
             destination = (geopy.distance.geodesic(kilometers=second*plane_data['calc_speed_history'][-1][0]*5/18)
                            .destination(current_lat_long, plane_data['calc_heading_history'][-1][0]))
+            print(f"DEBUG: second {second} speed {plane_data['calc_speed_history'][-1][0]} kilometers {second*plane_data['calc_speed_history'][-1][0]*5/18} current {current_lat_long} new {destination.latitude, destination.longitude}")
             new_lat, new_long = destination.latitude, destination.longitude
         elif len(plane_data['nav_heading_history']):
             destination = (geopy.distance.geodesic(kilometers=second * plane_data['calc_speed_history'][-1][0] * 5/18)

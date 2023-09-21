@@ -13,4 +13,4 @@ mongo_address: "127.0.0.1:27017"
 kafka_address: "" # The address for the KAFKA server
 filters:
   close: [10, 1000] # write filters here with the format [dist(km), alt(m)]
-  tooclose: [5, 300]
+  tooclose: [5, 1000]
