@@ -258,18 +258,15 @@ def get_alarm_info(hex, current_lat_long, plane_data):
     alarm_time = -1
     alarm_ll = False
     last_radius = 100000000
-    stats = {}
     did_raise_alarm = False
     matched_filters = match_filters(plane_data['distance_history'][-1][0])
     if len(matched_filters.keys()):  # if we are in the zone, don't bother
-        print(f"DEBUG: Matched one or more filters to the plane!")
         raise_alarm(hex, plane_data, 0)
         did_raise_alarm = True
     for second in range(CONFIG['think_ahead']):
         if len(plane_data['calc_heading_history']):
             destination = (geopy.distance.geodesic(kilometers=second*plane_data['calc_speed_history'][-1][0]*1/3600)
                            .destination(current_lat_long, plane_data['calc_heading_history'][-1][0]))
-            print(f"DEBUG: second {second} speed {plane_data['calc_speed_history'][-1][0]} meter {second*plane_data['calc_speed_history'][-1][0]*5/18} current {current_lat_long} new {destination.latitude, destination.longitude} heading {plane_data['calc_heading_history'][-1][0]}")
             new_lat, new_long = destination.latitude, destination.longitude
         elif len(plane_data['nav_heading_history']):
             destination = (geopy.distance.geodesic(kilometers=second * plane_data['calc_speed_history'][-1][0] * 1/3600)
@@ -281,7 +278,6 @@ def get_alarm_info(hex, current_lat_long, plane_data):
             break
         new_coords = (new_lat, new_long)
         dist_to_home = geopy.distance.geodesic(new_coords, HOME).km
-        stats.update({second: [dist_to_home, new_coords]})
         alarm_lat_long = dist_to_home < most_generous_dist
         if alarm_lat_long:
             alarm_ll = True
@@ -294,8 +290,6 @@ def get_alarm_info(hex, current_lat_long, plane_data):
             last_radius = dist_to_home
     if not did_raise_alarm:
         if -1 < alarm_time < CONFIG['think_ahead']:
-            print(f"DEBUG: obtained stats. alarm_time={alarm_time}")
-            print(stats)
             raise_alarm(hex, plane_data, alarm_time)
     if len(plane_data['alt_geom_history']):
         alarm = alarm_ll and plane_data['alt_geom_history'][-1][0] <= most_generous_alt
