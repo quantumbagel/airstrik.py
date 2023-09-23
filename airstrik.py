@@ -594,11 +594,12 @@ def collect_data(a_json, plane_history):
                 # if we don't have to have new data, just write the data in
                 database['flight_records'].insert_one(write)
                 plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
+                plane_data['extras']['last_written'] = {'lat': write['lat'], 'lon': write['lon']}
             # otherwise, check for new data
             elif len(plane_data['extras']['last_written'].keys()) != 0 and \
-                    plane_data['extras']['last_written']['lat'] != plane_data['lat_history'][-1][0] or \
-                    plane_data['extras']['last_written']['lon'] != plane_data['lon_history'][-1][0]:
-
+                    (plane_data['extras']['last_written']['lat'] != plane_data['lat_history'][-1][0] or
+                     plane_data['extras']['last_written']['lon'] != plane_data['lon_history'][-1][0]):
+                plane_data['extras']['last_written'] = {'lat': write['lat'], 'lon': write['lon']}
                 database['flight_records'].insert_one(write)
                 plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
         else:
