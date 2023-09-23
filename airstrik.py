@@ -577,13 +577,22 @@ def collect_data(a_json, plane_history):
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 1:  # If we have a full lat/long
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
-        if plane_data['extras']['decimation_tracker'] == 0 and CONFIG['decimation_factor'] != 0:  # add to mongodb
+        if (plane_data['extras']['decimation_tracker'] == 0 and CONFIG['decimation_factor'] != 0
+                and len(plane_data['lat_history']) > 1):  # add to mongodb
             # if we have a new lat/long, which updates everything relevant
+            if len(plane_data['nav_heading_history']):
+                nav_h = plane_data['nav_heading_history'][-1]
+            else:
+                nav_h = None
+            if len(plane_data['alt_geom_history']):
+                alt_g = plane_data['alt_geom_history'][-1]
+            else:
+                alt_g = None
             write = {'flight_name_id': plane_data['flight_name_id'],
                      'lat': plane_data['lat_history'][-1],
                      'lon': plane_data['lon_history'][-1],
-                     'nav_heading': plane_data['nav_heading_history'][-1],
-                     'alt_geom': plane_data['alt_geom_history'][-1],
+                     'nav_heading': nav_h,
+                     'alt_geom': alt_g,
                      'calc_heading': plane_data['calc_heading_history'][-1],
                      'calc_speed': plane_data['calc_speed_history'][-1],
                      'distance': plane_data['distance_history'][-1],
@@ -604,6 +613,8 @@ def collect_data(a_json, plane_history):
                 plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
         else:
             plane_data['extras']['decimation_tracker'] -= 1
+            if plane_data['extras']['decimation_tracker'] < 0:
+                plane_data['extras']['decimation_tracker'] -= 0
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(a_json['aircraft'])]}
 
 
