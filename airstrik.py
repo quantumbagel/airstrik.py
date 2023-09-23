@@ -12,6 +12,7 @@ import argparse
 import ruamel.yaml
 from pymongo.mongo_client import MongoClient
 from kafka import KafkaProducer
+
 parser = argparse.ArgumentParser(prog='airstrik.py', description='A simple program to track and detect airplanes '
                                                                  'heading towards the AERPAW field.', epilog='Go Pack!')
 parser.add_argument('-q', '--quiet', action='store_true')
@@ -238,12 +239,14 @@ def get_alarm_info(hex, current_lat_long, plane_data):
         did_raise_alarm = True
     for second in range(CONFIG['think_ahead']):
         if len(plane_data['calc_heading_history']):
-            destination = (geopy.distance.geodesic(kilometers=second*plane_data['calc_speed_history'][-1][0]*1/3600)
-                           .destination(current_lat_long, plane_data['calc_heading_history'][-1][0]))
+            destination = (
+                geopy.distance.geodesic(kilometers=second * plane_data['calc_speed_history'][-1][0] * 1 / 3600)
+                .destination(current_lat_long, plane_data['calc_heading_history'][-1][0]))
             new_lat, new_long = destination.latitude, destination.longitude
         elif len(plane_data['nav_heading_history']):
-            destination = (geopy.distance.geodesic(kilometers=second * plane_data['calc_speed_history'][-1][0] * 1/3600)
-                           .destination(current_lat_long, plane_data['nav_heading_history'][-1][0]))
+            destination = (
+                geopy.distance.geodesic(kilometers=second * plane_data['calc_speed_history'][-1][0] * 1 / 3600)
+                .destination(current_lat_long, plane_data['nav_heading_history'][-1][0]))
             new_lat, new_long = destination.latitude, destination.longitude
         else:
             return False, -1, 0, 0
@@ -576,22 +579,28 @@ def collect_data(a_json, plane_history):
             calculate_distance(plane_data)
         if plane_data['extras']['decimation_tracker'] == 0 and CONFIG['decimation_factor'] != 0:  # add to mongodb
             # if we have a new lat/long, which updates everything relevant
-            if len(plane_data['extras']['last_written'].keys()) != 0 and \
+            write = {'flight_name_id': plane_data['flight_name_id'],
+                     'lat': plane_data['lat_history'][-1],
+                     'lon': plane_data['lon_history'][-1],
+                     'nav_heading': plane_data['nav_heading_history'][-1],
+                     'alt_geom': plane_data['alt_geom_history'][-1],
+                     'calc_heading': plane_data['calc_heading_history'][-1],
+                     'calc_speed': plane_data['calc_speed_history'][-1],
+                     'distance': plane_data['distance_history'][-1],
+                     'extras': {'start_time': plane_data['extras']['start_time']},
+                     'filters': plane_data['filters'],
+                     'flight_id': plane_data['flight_id']}
+            if not CONFIG['decimation_force_new_data'] and len(plane_data['extras']['last_written'].keys()) != 0:
+                # if we don't have to have new data, just write the data in
+                database['flight_records'].insert_one(write)
+                plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
+            # otherwise, check for new data
+            elif len(plane_data['extras']['last_written'].keys()) != 0 and \
                     plane_data['extras']['last_written']['lat'] != plane_data['lat_history'][-1][0] or \
                     plane_data['extras']['last_written']['lon'] != plane_data['lon_history'][-1][0]:
-                write = {'flight_name_id': plane_data['flight_name_id'],
-                         'lat': plane_data['lat_history'][-1],
-                         'lon': plane_data['lon_history'][-1],
-                         'nav_heading': plane_data['nav_heading_history'][-1],
-                         'alt_geom': plane_data['alt_geom_history'][-1],
-                         'calc_heading': plane_data['calc_heading_history'][-1],
-                         'calc_speed': plane_data['calc_speed_history'][-1],
-                         'distance': plane_data['distance_history'][-1],
-                         'extras': {'start_time': plane_data['extras']['start_time']},
-                         'filters': plane_data['filters'],
-                         'flight_id': plane_data['flight_id']}
+
                 database['flight_records'].insert_one(write)
-                plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor']-1
+                plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
         else:
             plane_data['extras']['decimation_tracker'] -= 1
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(a_json['aircraft'])]}
