@@ -4,6 +4,9 @@ lat_lon_packet_age_max: 10 # The maximum age of a latitude packet used to calcul
 home: # Home lat/long point
   lat: 35.7270309
   lon: -78.695587
+decimation_factor: 15 # This is, essentially, how much data to store to the database. If this is 0, only the closest will be stored, but otherwise every nth unique set of information will be stored to the db.
+decimation_force_new_data: true
+utc_time_offset: -4 # the time offset in hours
 remember: 60 # maximum time in seconds where the aircraft has not sent a packet for the system to track it
 dump1090_dir: './dump1090' # the storage location of https://github.com/flightaware/dump1090 or https://github.com/mutability/dump978
 json_speed: 0  # time between updates

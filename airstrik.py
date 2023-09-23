@@ -217,33 +217,6 @@ def patch_add(aircraft, val_name, data):
         aircraft[val_name].append(data)
 
 
-def predict_lat_long(starting_lat_long, bearing, speed, time_traveled):
-    """
-    A function to predict lat long based on information given.
-    :param starting_lat_long: The starting coordinates
-    :param bearing: The bearing of the plane
-    :param speed: The speed of the plane
-    :param time_traveled: The time the plane has been traveling for
-    :return: The predicted location
-    """
-    pi_c = math.pi / 180
-    starting_lat = starting_lat_long[0] * pi_c
-    starting_lon = starting_lat_long[1] * pi_c
-    distance = time_traveled * 5/18 * speed # 5/18 = conversion from km/h to m/s
-    print(f"distance in {time_traveled} secs at {speed} speed = {distance} meters.")
-    earth_radius_m = 6371000
-    angular_distance = distance / earth_radius_m
-    predicted_lat = math.asin(math.sin(starting_lat) * math.cos(angular_distance)
-                              + math.cos(starting_lat) * math.sin(angular_distance) * math.cos(bearing))
-    predicted_lon = starting_lon + math.atan2(math.sin(bearing) * math.sin(angular_distance) * math.cos(starting_lat),
-                                              math.cos(angular_distance) - math.sin(starting_lat) * math.sin(
-                                                  predicted_lat))
-    print(f"DBG--- calculated distance - {distance/1000} actual - {geopy.distance.geodesic((predicted_lat, predicted_lon), (starting_lat, starting_lon))}")
-    return predicted_lat / pi_c, predicted_lon / pi_c
-
-
-
-
 def get_alarm_info(hex, current_lat_long, plane_data):
     """
     Calculate the alarm information by simulating the plane given in plane_data
@@ -519,7 +492,7 @@ def collect_data(a_json, plane_history):
                         closest_dist = dst[0]
                 write = {}
                 for item in plane_history[aircraft['hex']].keys():
-                    if item == 'extras':
+                    if item in ['extras', 'alarm_history']:
                         continue
                     if item in ['nav_heading_history', 'alt_geom_history'] and args.run_dump_978:  # not supported:
                         continue
@@ -575,7 +548,9 @@ def collect_data(a_json, plane_history):
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
                                                     "extras": {"start_time": a_json['now'],
                                                                'alarm_triggered': False,
-                                                               'end_time': None},
+                                                               'end_time': None,
+                                                               'decimation_tracker': 0,
+                                                               'last_written': {}},
                                                     "lat_history": [],
                                                     "lon_history": [],
                                                     "nav_heading_history": [],
@@ -599,6 +574,26 @@ def collect_data(a_json, plane_history):
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 1:  # If we have a full lat/long
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
+        if plane_data['extras']['decimation_tracker'] == 0 and CONFIG['decimation_factor'] != 0:  # add to mongodb
+            # if we have a new lat/long, which updates everything relevant
+            if len(plane_data['extras']['last_written'].keys()) != 0 and \
+                    plane_data['extras']['last_written']['lat'] != plane_data['lat_history'][-1][0] or \
+                    plane_data['extras']['last_written']['lon'] != plane_data['lon_history'][-1][0]:
+                write = {'flight_name_id': plane_data['flight_name_id'],
+                         'lat': plane_data['lat_history'][-1],
+                         'lon': plane_data['lon_history'][-1],
+                         'nav_heading': plane_data['nav_heading_history'][-1],
+                         'alt_geom': plane_data['alt_geom_history'][-1],
+                         'calc_heading': plane_data['calc_heading_history'][-1],
+                         'calc_speed': plane_data['calc_speed_history'][-1],
+                         'distance': plane_data['distance_history'][-1],
+                         'extras': {'start_time': plane_data['extras']['start_time']},
+                         'filters': plane_data['filters'],
+                         'flight_id': plane_data['flight_id']}
+                database['flight_records'].insert_one(write)
+                plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor']-1
+        else:
+            plane_data['extras']['decimation_tracker'] -= 1
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(a_json['aircraft'])]}
 
 
@@ -635,13 +630,14 @@ if __name__ == '__main__':
     current_day_planes = []
     current_day_alarm_trip = [0]
     current_day_alarm_planes = []
-    current_day = datetime.datetime.now().day  # set up the day tracking
+    tz = datetime.timezone(datetime.timedelta(hours=CONFIG['utc_time_offset']))
+    current_day = datetime.datetime.now(tz=tz).day  # set up the day tracking
     most_generous_alt = max([i[1] for i in CONFIG['filters'].values()])  # find the biggest filter values
     most_generous_dist = max([i[0] for i in CONFIG['filters'].values()])
     while True:
-        if current_day != datetime.datetime.now().day:  # the day changed! store stats
+        if current_day != datetime.datetime.now(tz=tz).day:  # the day changed! store stats
             database['stats'].insert_one(
-                {"_id": str(datetime.datetime.now().date() - datetime.timedelta(days=1)),
+                {"_id": str(datetime.datetime.now(tz=tz).date() - datetime.timedelta(days=1)),
                  # we use yesterday because it's tomorrow
                  "unique_planes": len(current_day_planes),
                  'total_trips': current_day_trip[0],
