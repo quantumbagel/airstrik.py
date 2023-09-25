@@ -9,6 +9,8 @@ import time
 import geopy.distance
 import atexit
 import argparse
+
+import pymongo.errors
 import ruamel.yaml
 from pymongo.mongo_client import MongoClient
 from kafka import KafkaProducer
@@ -577,7 +579,7 @@ def collect_data(a_json, plane_history):
         if min([len(plane_data['lat_history']), len(plane_data['lon_history'])]) >= 1:  # If we have a full lat/long
             # pair, then calculate the distance using geodesic
             calculate_distance(plane_data)
-        if (plane_data['extras']['decimation_tracker'] == 0 and CONFIG['decimation_factor'] != 0
+        if (plane_data['extras']['decimation_tracker'] <= 0 and CONFIG['decimation_factor'] != 0
                 and len(plane_data['lat_history']) > 1):  # add to mongodb
             # if we have a new lat/long, which updates everything relevant
             if len(plane_data['nav_heading_history']):
@@ -613,8 +615,6 @@ def collect_data(a_json, plane_history):
                 plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
         else:
             plane_data['extras']['decimation_tracker'] -= 1
-            if plane_data['extras']['decimation_tracker'] < 0:
-                plane_data['extras']['decimation_tracker'] -= 0
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(a_json['aircraft'])]}
 
 
@@ -657,13 +657,24 @@ if __name__ == '__main__':
     most_generous_dist = max([i[0] for i in CONFIG['filters'].values()])
     while True:
         if current_day != datetime.datetime.now(tz=tz).day:  # the day changed! store stats
-            database['stats'].insert_one(
-                {"_id": str(datetime.datetime.now(tz=tz).date() - datetime.timedelta(days=1)),
-                 # we use yesterday because it's tomorrow
-                 "unique_planes": len(current_day_planes),
-                 'total_trips': current_day_trip[0],
-                 'unique_alarm_planes': len(current_day_alarm_planes),
-                 'total_alarm_trips': current_day_alarm_trip[0]})
+            try:
+                database['stats'].insert_one(
+                    {"_id": str(datetime.datetime.now(tz=tz).date() - datetime.timedelta(days=1)),
+                     # we use yesterday because it's tomorrow
+                     "unique_planes": len(current_day_planes),
+                     'total_trips': current_day_trip[0],
+                     'unique_alarm_planes': len(current_day_alarm_planes),
+                     'total_alarm_trips': current_day_alarm_trip[0]})
+            except pymongo.errors.DuplicateKeyError:
+                print("Failed to write stats information because of a DuplicateKeyError!"
+                      " Going to overwrite the stat data instead.")
+                for collection in database['stats']:
+                    if collection['_id'] == str(datetime.datetime.now(tz=tz).date() - datetime.timedelta(days=1)):
+                        collection['unique_planes'] = len(current_day_planes)
+                        collection['total_trips'] = current_day_trip[0]
+                        collection['unique_alarm_planes'] = len(current_day_alarm_planes)
+                        collection['total_alarm_trips'] = current_day_alarm_trip[0]
+
             current_day_trip = [0]  # reset counters
             current_day_planes = []
             current_day_alarm_trip = [0]
