@@ -551,6 +551,7 @@ def collect_data(a_json, plane_history):
         if (aircraft['hex'] not in plane_history.keys()) and (aircraft['seen'] < CONFIG['remember']):
             # If we haven't seen this plane before, create a new one
             plane_history.update({aircraft['hex']: {"flight_name_id": [],
+                                                    "flight_id": aircraft['hex'],
                                                     "extras": {"start_time": a_json['now'],
                                                                'alarm_triggered': False,
                                                                'end_time': None,
@@ -563,7 +564,8 @@ def collect_data(a_json, plane_history):
                                                     "calc_heading_history": [],
                                                     "calc_speed_history": [],
                                                     'alarm_history': [],
-                                                    'distance_history': []}})
+                                                    'distance_history': [],
+                                                    'filters': []}})
         plane_data = plane_history[aircraft['hex']]  # A reference to plane
         if not len(plane_data['flight_name_id']):  # If we don't have a flight id stored
             if 'flight' in aircraft.keys():  # If there is an available flight id, add it!
@@ -590,6 +592,7 @@ def collect_data(a_json, plane_history):
                 alt_g = plane_data['alt_geom_history'][-1]
             else:
                 alt_g = None
+            if ''
             write = {'flight_name_id': plane_data['flight_name_id'],
                      'lat': plane_data['lat_history'][-1],
                      'lon': plane_data['lon_history'][-1],
