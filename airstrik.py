@@ -592,7 +592,12 @@ def collect_data(a_json, plane_history):
                 alt_g = plane_data['alt_geom_history'][-1]
             else:
                 alt_g = None
-            if ''
+            if not len(plane_data['calc_heading_history']):
+                print("For some reason, there are two lat/longs, but no calc heading lol")
+                print(f"Lat longs: {plane_data['lat_history']}, calc heading {plane_data['calc_heading_history']}")
+                plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1 # until a fix is found
+                # just reset lol
+                continue
             write = {'flight_name_id': plane_data['flight_name_id'],
                      'lat': plane_data['lat_history'][-1],
                      'lon': plane_data['lon_history'][-1],
