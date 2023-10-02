@@ -621,6 +621,7 @@ def collect_data(a_json, plane_history):
                 print("written (if new data)")
                 database['flight_records'].insert_one(write)
                 plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
+            plane_data['extras']['last_written'] = {'lat': write['lat'], 'lon': write['lon']} # update LastWritten
         else:
             plane_data['extras']['decimation_tracker'] -= 1
     return {i[1]: i[0] for i in [(ind, i['hex']) for ind, i in enumerate(a_json['aircraft'])]}
