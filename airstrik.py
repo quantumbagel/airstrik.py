@@ -595,7 +595,7 @@ def collect_data(a_json, plane_history):
             if not len(plane_data['calc_heading_history']):
                 print("For some reason, there are two lat/longs, but no calc heading lol")
                 print(f"Lat longs: {plane_data['lat_history']}, calc heading {plane_data['calc_heading_history']}")
-                plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1 # until a fix is found
+                plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1  # until a fix is found
                 # just reset lol
                 continue
             write = {'flight_name_id': plane_data['flight_name_id'],
@@ -609,17 +609,15 @@ def collect_data(a_json, plane_history):
                      'extras': {'start_time': plane_data['extras']['start_time']},
                      'filters': plane_data['filters'],
                      'flight_id': plane_data['flight_id']}
-            if not CONFIG['decimation_force_new_data'] and len(plane_data['extras']['last_written'].keys()) != 0:
+            if not CONFIG['decimation_force_new_data'] and len(plane_data['extras']['last_written'].keys()) == 0:
                 # if we don't have to have new data, just write the data in
                 database['flight_records'].insert_one(write)
                 print("written (force new data)")
                 plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
-                plane_data['extras']['last_written'] = {'lat': write['lat'], 'lon': write['lon']}
             # otherwise, check for new data
             elif len(plane_data['extras']['last_written'].keys()) != 0 and \
                     (plane_data['extras']['last_written']['lat'] != plane_data['lat_history'][-1][0] or
                      plane_data['extras']['last_written']['lon'] != plane_data['lon_history'][-1][0]):
-                plane_data['extras']['last_written'] = {'lat': write['lat'], 'lon': write['lon']}
                 print("written (if new data)")
                 database['flight_records'].insert_one(write)
                 plane_data['extras']['decimation_tracker'] = CONFIG['decimation_factor'] - 1
