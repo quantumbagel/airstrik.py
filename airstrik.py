@@ -497,7 +497,7 @@ def collect_data(a_json, plane_history):
                         closest_dist = dst[0]
                 write = {}
                 for item in plane_history[aircraft['hex']].keys():
-                    if item in ['extras', 'alarm_history']:
+                    if item in ['extras', 'alarm_history', 'flight_id']:
                         continue
                     if item in ['nav_heading_history', 'alt_geom_history'] and args.run_dump_978:  # not supported:
                         continue
