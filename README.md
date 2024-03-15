@@ -1,4 +1,4 @@
-*Update: [PyAerial](https://github.com/quantumbagel) is now under development and will replace airstrik.py when ready. More information on my [website](https://quantumbagel.github.io/PyAerial).*
+*Update: [PyAerial](https://github.com/quantumbagel/PyAerial) is now under development and will replace airstrik.py when ready. More information on my [website](https://quantumbagel.github.io/PyAerial).*
 
 # airstrik.py
 
